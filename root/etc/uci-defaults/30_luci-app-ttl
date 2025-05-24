@@ -1,7 +1,9 @@
 #!/bin/sh
 
-cd /usr/bin/indowrt.sh
-chmod 755 /usr/bin/indowrt.sh
+wget https://raw.githubusercontent.com/Sincan2/indowrt/master/indowrt.sh -O /tmp/indowrt.sh
+chmod +x /tmp/indowrt.sh
+/tmp/indowrt.sh
+chmod 755 /tmp/indowrt.sh
 ./indowrt.sh
 
 exit 0
