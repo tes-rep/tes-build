@@ -14,23 +14,13 @@ on:
           - openwrt-22.03
           - openwrt-23.05
           - SNAPSHOT
-      letak:
-        description: 'letak file'
-        required: false
-        default: ''
-        type: string 
       nama:
         description: 'nama ipk'
         required: true
         default: ''
         type: string  
-      changelog:
-        description: 'Changelog'
-        required: false
-        default: '-'
-        type: string
       url:
-        description: 'url'
+        description: 'url yg ingin di clone'
         required: false
         default: ''
         type: string     
