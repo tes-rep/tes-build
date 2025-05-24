@@ -29,11 +29,7 @@ on:
         required: false
         default: '-'
         type: string
-      url:
-        description: 'url'
-        required: false
-        default: ''
-        type: string     
+    
   push:
     tags:
       - "v*"
@@ -99,7 +95,6 @@ jobs:
       - name: Set up build environment
         run: |
           echo "::group::Setting up build environment for ${{ matrix.arch }}-${{ matrix.branch }}"
-          git clone ${{ inputs.url }}
           mkdir -p feeds/${{ env.PACKAGE_NAME }} artifacts
           rsync -av --exclude='.git/' --exclude='feeds/' --exclude='artifacts/' ./ ./feeds/${{ env.PACKAGE_NAME }}/
           echo "::endgroup::"
