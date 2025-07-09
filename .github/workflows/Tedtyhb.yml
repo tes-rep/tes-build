@@ -64,6 +64,7 @@ jobs:
           fi
 
             cd ..
+            mkdir -p driver-archive
           mv driver-download/* driver-archive || true
           mkdir driver-extracted
 
