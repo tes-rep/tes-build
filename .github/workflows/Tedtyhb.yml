@@ -1,4 +1,4 @@
-name: Inject Driver (Auto Folder)
+name: Inject Driver (Auto Folder + Fixed Extension)
 
 on:
   workflow_dispatch:
@@ -51,6 +51,7 @@ jobs:
         run: |
           DRIVER_URL="${{ steps.vars.outputs.driver_url }}"
           echo "Downloading driver from $DRIVER_URL"
+
           mkdir -p driver-download
           cd driver-download
 
@@ -63,24 +64,26 @@ jobs:
             aria2c -q -x 16 -s 16 -k 1M "$DRIVER_URL"
           fi
 
-            cd ..
-            mkdir -p driver-archive
-          mv driver-download/* driver-archive || true
+          cd ..
+          mkdir -p driver-archive
+          mv driver-download/* driver-archive/ || true
           mkdir driver-extracted
 
-          filename=$(ls driver-archive)
+          archive_file=$(find driver-archive -type f | head -n 1)
+          echo "Archive file: $archive_file"
+
+          filename=$(basename "$archive_file")
           EXT="${filename##*.}"
+          echo "Detected extension: $EXT"
 
           case "$EXT" in
-          "gz"|"tgz") tar -xzf driver-archive -C driver-extracted ;;
-          "zip") unzip driver-archive -d driver-extracted ;;
-          "xz") tar -xJf driver-archive -C driver-extracted ;;
-          "tar") tar -xf driver-archive -C driver-extracted ;;
-          *) echo "Unknown archive type: $EXT"; exit 1 ;;
+            "gz"|"tgz") tar -xzf "$archive_file" -C driver-extracted ;;
+            "zip") unzip "$archive_file" -d driver-extracted ;;
+            "xz") tar -xJf "$archive_file" -C driver-extracted ;;
+            "tar") tar -xf "$archive_file" -C driver-extracted ;;
+            *) echo "Unknown archive type: $EXT"; exit 1 ;;
           esac
 
-
-          # Detect folder name
           cd driver-extracted
           folder=$(find . -maxdepth 1 -mindepth 1 -type d | head -n 1 | sed 's|^\./||')
           echo "Detected driver folder: $folder"
@@ -92,12 +95,11 @@ jobs:
           cd target-repo
           git checkout ${{ steps.vars.outputs.target_branch }} || git checkout -b ${{ steps.vars.outputs.target_branch }}
 
-      - name: Inject driver folder into source
+      - name: Inject driver folder into source tree
         run: |
           folder="${{ steps.extract_driver.outputs.driver_folder }}"
           echo "Injecting folder: $folder"
           cd target-repo
-
           mkdir -p drivers/net/wireless/"$folder"
           cp -r ../driver-extracted/"$folder"/* drivers/net/wireless/"$folder"/
 
@@ -110,6 +112,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Inject driver '$folder' from workflow #${{ github.run_number }}"
+            git commit -m "Inject driver '$folder' from workflow run #${{ github.run_number }}"
             git remote set-url origin https://x-access-token:${PAT}@github.com/${{ steps.fixrepo.outputs.normalized_repo }}.git
             git push origin ${{ steps.vars.outputs.target_branch }}
