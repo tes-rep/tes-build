@@ -112,6 +112,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Inject driver '$folder' from workflow run #${{ github.run_number }}"
-            git remote set-url origin https://x-access-token:${PAT}@github.com/${{ steps.fixrepo.outputs.normalized_repo }}.git
-            git push origin ${{ steps.vars.outputs.target_branch }}
+            echo "Committing with driver folder: $driver_folder"
+            git commit -m "Inject driver '$driver_folder' from workflow run #${{ github.run_number }}"
+            git remote set-url origin https://x-access-token:${PAT}@github.com/${{ env.normalized_repo }}.git
+            git push origin "$target_branch"
