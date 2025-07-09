@@ -63,18 +63,21 @@ jobs:
             aria2c -q -x 16 -s 16 -k 1M "$DRIVER_URL"
           fi
 
-          cd ..
+            cd ..
           mv driver-download/* driver-archive || true
           mkdir driver-extracted
 
-          EXT="${DRIVER_URL##*.}"
+          filename=$(ls driver-archive)
+          EXT="${filename##*.}"
+
           case "$EXT" in
-            "gz"|"tgz") tar -xzf driver-archive -C driver-extracted ;;
-            "zip") unzip driver-archive -d driver-extracted ;;
-            "xz") tar -xJf driver-archive -C driver-extracted ;;
-            "tar") tar -xf driver-archive -C driver-extracted ;;
-            *) echo "Unknown archive type: $EXT"; exit 1 ;;
+          "gz"|"tgz") tar -xzf driver-archive -C driver-extracted ;;
+          "zip") unzip driver-archive -d driver-extracted ;;
+          "xz") tar -xJf driver-archive -C driver-extracted ;;
+          "tar") tar -xf driver-archive -C driver-extracted ;;
+          *) echo "Unknown archive type: $EXT"; exit 1 ;;
           esac
+
 
           # Detect folder name
           cd driver-extracted
