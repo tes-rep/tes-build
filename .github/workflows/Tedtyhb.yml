@@ -1,0 +1,111 @@
+name: Inject Driver (Auto Folder)
+
+on:
+  workflow_dispatch:
+    inputs:
+      driver_url:
+        description: 'URL archive driver custom (.zip/.tar.gz)'
+        required: true
+        type: string
+      target_repo:
+        description: 'Target repository (owner/repo or full URL)'
+        required: true
+        type: string
+      target_branch:
+        description: 'Target branch (default: main)'
+        required: false
+        default: main
+        type: string
+
+jobs:
+  inject_driver:
+    runs-on: ubuntu-latest
+    env:
+      PAT: ${{ secrets.TARGET_REPO_PAT }}
+
+    steps:
+      - name: Setup variables
+        id: vars
+        run: |
+          echo "driver_url=${{ github.event.inputs.driver_url }}" >> $GITHUB_OUTPUT
+          echo "target_branch=${{ github.event.inputs.target_branch || 'main' }}" >> $GITHUB_OUTPUT
+
+      - name: Normalize target_repo input
+        id: fixrepo
+        run: |
+          repo="${{ github.event.inputs.target_repo }}"
+          if [[ "$repo" == https://github.com/* ]]; then
+            repo="${repo#https://github.com/}"
+            repo="${repo%/}"
+          fi
+          echo "normalized_repo=$repo" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y aria2 unzip megatools python3-pip
+          python3 -m pip install --upgrade gdown
+
+      - name: Download and extract driver archive
+        id: extract_driver
+        run: |
+          DRIVER_URL="${{ steps.vars.outputs.driver_url }}"
+          echo "Downloading driver from $DRIVER_URL"
+          mkdir -p driver-download
+          cd driver-download
+
+          if [[ "$DRIVER_URL" =~ mega\.nz ]]; then
+            megadl --path=. "$DRIVER_URL"
+          elif [[ "$DRIVER_URL" =~ drive.google.com ]]; then
+            FILE_ID=$(echo "$DRIVER_URL" | grep -oP '(/d/|id=)([a-zA-Z0-9_-]+)' | grep -oP '[a-zA-Z0-9_-]+$')
+            gdown "https://drive.google.com/uc?id=$FILE_ID"
+          else
+            aria2c -q -x 16 -s 16 -k 1M "$DRIVER_URL"
+          fi
+
+          cd ..
+          mv driver-download/* driver-archive || true
+          mkdir driver-extracted
+
+          EXT="${DRIVER_URL##*.}"
+          case "$EXT" in
+            "gz"|"tgz") tar -xzf driver-archive -C driver-extracted ;;
+            "zip") unzip driver-archive -d driver-extracted ;;
+            "xz") tar -xJf driver-archive -C driver-extracted ;;
+            "tar") tar -xf driver-archive -C driver-extracted ;;
+            *) echo "Unknown archive type: $EXT"; exit 1 ;;
+          esac
+
+          # Detect folder name
+          cd driver-extracted
+          folder=$(find . -maxdepth 1 -mindepth 1 -type d | head -n 1 | sed 's|^\./||')
+          echo "Detected driver folder: $folder"
+          echo "driver_folder=$folder" >> $GITHUB_OUTPUT
+
+      - name: Clone target repo
+        run: |
+          git clone --depth=1 https://x-access-token:${PAT}@github.com/${{ steps.fixrepo.outputs.normalized_repo }}.git target-repo
+          cd target-repo
+          git checkout ${{ steps.vars.outputs.target_branch }} || git checkout -b ${{ steps.vars.outputs.target_branch }}
+
+      - name: Inject driver folder into source
+        run: |
+          folder="${{ steps.extract_driver.outputs.driver_folder }}"
+          echo "Injecting folder: $folder"
+          cd target-repo
+
+          mkdir -p drivers/net/wireless/"$folder"
+          cp -r ../driver-extracted/"$folder"/* drivers/net/wireless/"$folder"/
+
+      - name: Commit and push changes
+        run: |
+          cd target-repo
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add drivers/net/wireless/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Inject driver '$folder' from workflow #${{ github.run_number }}"
+            git remote set-url origin https://x-access-token:${PAT}@github.com/${{ steps.fixrepo.outputs.normalized_repo }}.git
+            git push origin ${{ steps.vars.outputs.target_branch }}
