@@ -166,4 +166,5 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "Update kernel ${{ steps.version_extract.outputs.version }} files from workflow run #${{ github.run_number }}"
+            git remote set-url origin https://x-access-token:${PAT}@github.com/${{ steps.fixrepo.outputs.normalized_repo }}.git
             git push origin ${{ steps.vars.outputs.target_branch }}
