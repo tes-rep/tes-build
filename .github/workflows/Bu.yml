@@ -133,7 +133,7 @@ jobs:
         run: |
           cd target-repo
           mkdir -p drivers/net/wireless/${{ steps.version_extract.outputs.version }}
-          rm -rf drivers/net/wireless/${{ steps.version_extract.outputs.version }}/* || true
+          
 
           cd ../kernel-extracted
           shopt -s nullglob
