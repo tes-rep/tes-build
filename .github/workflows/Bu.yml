@@ -1,0 +1,161 @@
+name: TEST v3
+
+on:
+  workflow_dispatch:
+    inputs:
+      kernel_url:
+        description: 'URL kernel file (GitHub, Mediafire direct, Mega.nz, Google Drive)'
+        required: true
+        type: string
+      target_repo:
+        description: 'Target repository (owner/repo or full URL)'
+        required: true
+        type: string
+      target_branch:
+        description: 'Target branch (default: main)'
+        required: false
+        default: main
+        type: string
+
+jobs:
+  download_extract_push:
+    runs-on: ubuntu-latest
+    env:
+      PAT: ${{ secrets.TARGET_REPO_PAT }}
+
+    steps:
+      - name: Setup variables
+        id: vars
+        run: |
+          echo "kernel_url=${{ github.event.inputs.kernel_url }}" >> $GITHUB_OUTPUT
+          echo "target_branch=${{ github.event.inputs.target_branch || 'main' }}" >> $GITHUB_OUTPUT
+
+      - name: Normalize target_repo input
+        id: fixrepo
+        run: |
+          repo="${{ github.event.inputs.target_repo }}"
+          if [[ "$repo" == https://github.com/* ]]; then
+            repo="${repo#https://github.com/}"
+            repo="${repo%/}"
+          fi
+          echo "normalized_repo=$repo" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y aria2 unzip megatools python3-pip
+          python3 -m pip install --upgrade gdown
+
+      - name: Download kernel archive depending on URL
+        run: |
+          url="${{ steps.vars.outputs.kernel_url }}"
+          echo "Downloading from $url"
+
+          if [[ "$url" =~ mega\.nz ]]; then
+            echo "Detected Mega.nz URL"
+            megadl --path=./kernel-archive-download "$url"
+            cd kernel-archive-download
+            file=$(ls | head -n 1)
+            mv "$file" ../kernel-archive
+            cd ..
+            rm -rf kernel-archive-download
+
+          elif [[ "$url" =~ drive.google.com ]]; then
+            echo "Detected Google Drive URL"
+            FILE_ID=$(echo "$url" | grep -oP '(?<=/d/)[^/]+')
+            if [ -z "$FILE_ID" ]; then
+              FILE_ID=$(echo "$url" | grep -oP '(?<=id=)[^&]+')
+            fi
+            if [ -z "$FILE_ID" ]; then
+              echo "ERROR: Cannot extract Google Drive file ID"
+              exit 1
+            fi
+            mkdir -p kernel-archive-download
+            cd kernel-archive-download
+            gdown "https://drive.google.com/uc?id=$FILE_ID"
+            cd ..
+
+          else
+            aria2c -q -x 16 -s 16 -k 1M -o kernel-archive "$url"
+          fi
+
+      - name: Extract version from downloaded file
+        id: version_extract
+        run: |
+          if [ -f kernel-archive ]; then
+            filename=$(basename kernel-archive)
+          else
+            files=(kernel-archive-download/*)
+            if [ ${#files[@]} -gt 0 ]; then
+              filename=$(basename "${files[0]}")
+              # move file dari folder download ke kernel-archive supaya proses ekstrak sama
+              mv "${files[0]}" kernel-archive
+              rm -rf kernel-archive-download
+            else
+              echo "ERROR: No downloaded files found"
+              exit 1
+            fi
+          fi
+
+          echo "Filename: $filename"
+          if [[ "$filename" =~ ([0-9]+\.[0-9]+(\.[0-9]+)?) ]]; then
+            version=${BASH_REMATCH[1]}
+          else
+            version="unknown"
+          fi
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Determine archive type and extract accordingly
+        run: |
+          file kernel-archive
+          ARCHIVE_TYPE=$(file kernel-archive)
+
+          mkdir kernel-extracted
+
+          if [[ $ARCHIVE_TYPE =~ gzip ]]; then
+            tar -xzf kernel-archive -C kernel-extracted
+          elif [[ $ARCHIVE_TYPE =~ Zip ]]; then
+            unzip kernel-archive -d kernel-extracted
+          elif [[ $ARCHIVE_TYPE =~ POSIX.*tar ]]; then
+            tar -xf kernel-archive -C kernel-extracted
+          else
+            echo "Unknown archive format!"
+            exit 1
+          fi
+
+      - name: Clone target repo
+        run: |
+          git clone https://x-access-token:${PAT}@github.com/${{ steps.fixrepo.outputs.normalized_repo }}.git target-repo
+          cd target-repo
+          git checkout ${{ steps.vars.outputs.target_branch }} || git checkout -b ${{ steps.vars.outputs.target_branch }}
+
+      - name: Copy kernel files to target repo folder kernel/<version>/ with flattening
+        run: |
+          cd target-repo
+          mkdir -p drivers/net/wireless/${{ steps.version_extract.outputs.version }}
+          rm -rf drivers/net/wireless/${{ steps.version_extract.outputs.version }}/* || true
+
+          cd ../kernel-extracted
+          shopt -s nullglob
+          entries=(*/)
+          if [ ${#entries[@]} -eq 1 ]; then
+            cp -R "${entries[0]}"* ../target-repo/drivers/net/wireless/${{ steps.version_extract.outputs.version }}/
+          else
+            cp -R * ../target-repo/drivers/net/wireless/${{ steps.version_extract.outputs.version }}/
+          fi
+
+      - name: Commit and push changes
+        env:
+          PAT: ${{ secrets.TARGET_REPO_PAT }}
+        run: |
+          cd target-repo
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add drivers/net/wireless/${{ steps.version_extract.outputs.version }}/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update kernel ${{ steps.version_extract.outputs.version }} files from workflow run #${{ github.run_number }}"
+            git remote set-url origin https://x-access-token:${PAT}@github.com/${{ steps.fixrepo.outputs.normalized_repo }}.git
+            git push origin ${{ steps.vars.outputs.target_branch }}
+          fi
