@@ -16,12 +16,20 @@ on:
         required: false
         default: main
         type: string
+      Secret:
+        description: 'Target branch (default: main)'
+        required: false
+        default: TES_REP
+        type: choice
+        options:
+          - TARGET_REPO_PAT
+          - TES_REP
 
 jobs:
   download_extract_push:
     runs-on: ubuntu-latest
     env:
-      PAT: ${{ secrets.TARGET_REPO_PAT }}
+      PAT: ${{ secrets.${{ github.event.inputs.secret }} }}
 
     steps:
       - name: Setup variables
@@ -146,7 +154,7 @@ jobs:
 
       - name: Commit and push changes
         env:
-          PAT: ${{ secrets.TARGET_REPO_PAT }}
+          PAT: ${{ secrets.${{ github.event.inputs.secret }} }}
         run: |
           cd target-repo
           git config user.name "github-actions"
