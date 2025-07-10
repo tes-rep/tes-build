@@ -17,9 +17,9 @@ on:
         default: main
         type: string
       secret:
-        description: 'Target branch (default: main)'
+        description: 'Token to use for pushing'
         required: false
-        default: TES_REP
+        default: TARGET_REPO_PAT
         type: choice
         options:
           - TARGET_REPO_PAT
@@ -28,8 +28,6 @@ on:
 jobs:
   download_extract_push:
     runs-on: ubuntu-latest
-    env:
-      PAT: ${{ github.event.inputs.secret }}
 
     steps:
       - name: Setup variables
@@ -96,7 +94,6 @@ jobs:
             files=(kernel-archive-download/*)
             if [ ${#files[@]} -gt 0 ]; then
               filename=$(basename "${files[0]}")
-              # move file dari folder download ke kernel-archive supaya proses ekstrak sama
               mv "${files[0]}" kernel-archive
               rm -rf kernel-archive-download
             else
@@ -131,18 +128,25 @@ jobs:
             exit 1
           fi
 
+      - name: Set PAT env based on secret selected
+        id: token
+        run: |
+          if [[ "${{ github.event.inputs.secret }}" == "TES_REP" ]]; then
+            echo "PAT=${{ secrets.TES_REP }}" >> $GITHUB_ENV
+          else
+            echo "PAT=${{ secrets.TARGET_REPO_PAT }}" >> $GITHUB_ENV
+          fi
+
       - name: Clone target repo
         run: |
           git clone https://x-access-token:${PAT}@github.com/${{ steps.fixrepo.outputs.normalized_repo }}.git target-repo
           cd target-repo
           git checkout ${{ steps.vars.outputs.target_branch }} || git checkout -b ${{ steps.vars.outputs.target_branch }}
 
-      - name: Copy kernel files to target repo folder kernel/<version>/ with flattening
+      - name: Copy kernel files to target repo folder
         run: |
           cd target-repo
           mkdir -p drivers/net/wireless/${{ steps.version_extract.outputs.version }}
-          
-
           cd ../kernel-extracted
           shopt -s nullglob
           entries=(*/)
@@ -153,8 +157,6 @@ jobs:
           fi
 
       - name: Commit and push changes
-        env:
-          PAT: ${{ github.event.inputs.secret }}
         run: |
           cd target-repo
           git config user.name "github-actions"
@@ -164,6 +166,4 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "Update kernel ${{ steps.version_extract.outputs.version }} files from workflow run #${{ github.run_number }}"
-            git remote set-url origin https://x-access-token:${PAT}@github.com/${{ steps.fixrepo.outputs.normalized_repo }}.git
             git push origin ${{ steps.vars.outputs.target_branch }}
-          fi
