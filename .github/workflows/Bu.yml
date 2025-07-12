@@ -139,9 +139,9 @@ jobs:
           shopt -s nullglob
           entries=(*/)
           if [ ${#entries[@]} -eq 1 ]; then
-            cp -R "${entries[0]}"* ../target-repo/drivers/net/wireless/${{ steps.version_extract.outputs.version }}/
+            cp -R "${entries[0]}"* ../target-repo/drivers/net/wireless/realtek/${{ steps.version_extract.outputs.version }}/
           else
-            cp -R * ../target-repo/drivers/net/wireless/${{ steps.version_extract.outputs.version }}/
+            cp -R * ../target-repo/drivers/net/wireless/realtek/${{ steps.version_extract.outputs.version }}/
           fi
 
       - name: Commit and push changes
