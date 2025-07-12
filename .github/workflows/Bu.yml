@@ -80,30 +80,26 @@ jobs:
           fi
 
       - name: Extract version from downloaded file
-        id: version_extract
-        run: |
-          if [ -f kernel-archive ]; then
-            filename=$(basename kernel-archive)
-          else
-            files=(kernel-archive-download/*)
-            if [ ${#files[@]} -gt 0 ]; then
-              filename=$(basename "${files[0]}")
-              # move file dari folder download ke kernel-archive supaya proses ekstrak sama
-              mv "${files[0]}" kernel-archive
-              rm -rf kernel-archive-download
-            else
-              echo "ERROR: No downloaded files found"
-              exit 1
-            fi
-          fi
+      - name: Extract filename from downloaded file
+  id: version_extract
+  run: |
+    if [ -f kernel-archive ]; then
+      filename=$(basename kernel-archive)
+    else
+      files=(kernel-archive-download/*)
+      if [ ${#files[@]} -gt 0 ]; then
+        filename=$(basename "${files[0]}")
+        # move file dari folder download ke kernel-archive supaya proses ekstrak sama
+        mv "${files[0]}" kernel-archive
+        rm -rf kernel-archive-download
+      else
+        echo "ERROR: No downloaded files found"
+        exit 1
+      fi
+    fi
 
-          echo "Filename: $filename"
-          if [[ "$filename" =~ ([0-9]+\.[0-9]+(\.[0-9]+)?) ]]; then
-            version=${BASH_REMATCH[1]}
-          else
-            version="realtek"
-          fi
-          echo "version=$version" >> $GITHUB_OUTPUT
+    echo "Filename: $filename"
+    echo "filename=$filename" >> $GITHUB_OUTPUT
 
       - name: Determine archive type and extract accordingly
         run: |
