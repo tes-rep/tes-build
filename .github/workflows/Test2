@@ -1,0 +1,157 @@
+name: test v5
+
+on:
+  workflow_dispatch:
+    inputs:
+      kernel_url:
+        description: 'URL file arsip driver (tar.gz, zip, zst) – isi "none" untuk skip download'
+        required: false
+        default: ''
+        type: string
+
+      repo_clone_url:
+        description: 'Repo GitHub driver (jika tidak download). Contoh: https://github.com/ulli-kroll/rtl8189fs.git'
+        required: false
+        default: 'https://github.com/ulli-kroll/rtl8189fs.git'
+        type: string
+
+      driver_type:
+        description: 'Path target dalam repo (misalnya: drivers/net/wireless/realtek/rtl8189fs)'
+        required: true
+        default: 'drivers/net/wireless/realtek/rtl8189fs'
+        type: string
+
+      target_repo:
+        description: 'Target repo GitHub (contoh: houjie/linux-openwrt)'
+        required: true
+        type: string
+
+      target_branch:
+        description: 'Target branch di repo tujuan'
+        required: false
+        default: main
+        type: string
+
+jobs:
+  kernel_sync:
+    runs-on: ubuntu-latest
+    env:
+      PAT: ${{ secrets.TARGET_REPO_PAT }}
+
+    steps:
+      - name: Setup Vars
+        id: vars
+        run: |
+          echo "kernel_url=${{ github.event.inputs.kernel_url }}" >> $GITHUB_OUTPUT
+          echo "target_branch=${{ github.event.inputs.target_branch || 'main' }}" >> $GITHUB_OUTPUT
+
+      - name: Normalize Target Repo
+        id: fixrepo
+        run: |
+          repo="${{ github.event.inputs.target_repo }}"
+          if [[ "$repo" == https://github.com/* ]]; then
+            repo="${repo#https://github.com/}"
+            repo="${repo%/}"
+          fi
+          echo "normalized_repo=$repo" >> $GITHUB_OUTPUT
+
+      - name: Install Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y aria2 unzip megatools zstd patch
+          python3 -m pip install --upgrade gdown
+
+      # ==== DOWNLOAD MODE ====
+      - name: Download Driver Archive
+        if: ${{ github.event.inputs.kernel_url != '' && github.event.inputs.kernel_url != 'none' }}
+        run: |
+          mkdir -p kernel-archive-download
+          url="${{ github.event.inputs.kernel_url }}"
+
+          if [[ "$url" =~ mega\.nz ]]; then
+            megadl --path=kernel-archive-download "$url"
+          elif [[ "$url" =~ drive.google.com ]]; then
+            FILE_ID=$(echo "$url" | grep -oP '(?<=/d/)[^/]+')
+            [ -z "$FILE_ID" ] && FILE_ID=$(echo "$url" | grep -oP '(?<=id=)[^&]+')
+            [ -z "$FILE_ID" ] && { echo "Invalid Google Drive URL"; exit 1; }
+            cd kernel-archive-download && gdown "https://drive.google.com/uc?id=$FILE_ID" && cd ..
+          else
+            aria2c -q -x 16 -s 16 -d kernel-archive-download "$url"
+          fi
+
+      - name: Extract Archive
+        if: ${{ github.event.inputs.kernel_url != '' && github.event.inputs.kernel_url != 'none' }}
+        run: |
+          mkdir -p kernel-extracted
+          file_path=$(ls kernel-archive-download/* | head -n 1)
+          mv "$file_path" kernel-archive
+          type=$(file kernel-archive)
+
+          if [[ "$type" =~ Zstandard ]]; then
+            tar --use-compress-program=unzstd -xvf kernel-archive -C kernel-extracted
+          elif [[ "$type" =~ gzip ]]; then
+            tar -xzf kernel-archive -C kernel-extracted
+          elif [[ "$type" =~ Zip ]]; then
+            unzip -o kernel-archive -d kernel-extracted
+          elif [[ "$type" =~ POSIX.*tar ]]; then
+            tar -xf kernel-archive -C kernel-extracted
+          else
+            echo "Unsupported archive format"
+            exit 1
+          fi
+
+      # ==== GIT CLONE MODE ====
+      - name: Clone Driver Repo
+        if: ${{ github.event.inputs.kernel_url == '' || github.event.inputs.kernel_url == 'none' }}
+        run: |
+          git clone --depth=1 "${{ github.event.inputs.repo_clone_url }}" driver-clone
+
+      # ==== CLONE TARGET ====
+      - name: Clone Target Repo
+        run: |
+          git clone https://x-access-token:${PAT}@github.com/${{ steps.fixrepo.outputs.normalized_repo }}.git target-repo
+          cd target-repo
+          git checkout ${{ steps.vars.outputs.target_branch }} || git checkout -b ${{ steps.vars.outputs.target_branch }}
+
+      # ==== COPY + PATCH (CLONE MODE) ====
+      - name: Copy & Patch from Repo
+        if: ${{ github.event.inputs.kernel_url == '' || github.event.inputs.kernel_url == 'none' }}
+        run: |
+          mkdir -p "target-repo/${{ github.event.inputs.driver_type }}"
+          cp -r driver-clone/* "target-repo/${{ github.event.inputs.driver_type }}"
+
+          find driver-clone -type f -name "*.patch" | while read patch; do
+            echo "Applying patch: $patch"
+            patch -d target-repo -p1 < "$patch"
+          done
+
+      # ==== COPY + PATCH (DOWNLOAD MODE) ====
+      - name: Copy & Patch from Archive
+        if: ${{ github.event.inputs.kernel_url != '' && github.event.inputs.kernel_url != 'none' }}
+        run: |
+          mkdir -p "target-repo/${{ github.event.inputs.driver_type }}"
+          cd kernel-extracted
+          entries=(*/)
+          if [ ${#entries[@]} -eq 1 ]; then
+            cp -R "${entries[0]}"* "../target-repo/${{ github.event.inputs.driver_type }}"
+          else
+            cp -R * "../target-repo/${{ github.event.inputs.driver_type }}"
+          fi
+          cd ..
+
+          find kernel-extracted -type f -name "*.patch" | while read patch; do
+            echo "Applying patch: $patch"
+            patch -d target-repo -p1 < "$patch"
+          done
+
+      - name: Commit and Push
+        run: |
+          cd target-repo
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add "${{ github.event.inputs.driver_type }}"
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Sync driver to ${{ github.event.inputs.driver_type }}"
+            git push origin ${{ steps.vars.outputs.target_branch }}
