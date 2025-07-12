@@ -132,7 +132,7 @@ jobs:
       - name: Copy kernel files to target repo folder kernel/<version>/ with flattening
         run: |
           cd target-repo
-          mkdir -p drivers/net/wireless/${{ steps.version_extract.outputs.version }}
+          mkdir -p drivers/net/wireless/realtek/${{ steps.version_extract.outputs.version }}
           
 
           cd ../kernel-extracted
