@@ -128,16 +128,16 @@ jobs:
       - name: Copy kernel files to target repo folder kernel/<version>/ with flattening
         run: |
           cd target-repo
-          mkdir -p drivers/net/wireless/realtek/${{ steps.version_extract.outputs.version }}
+          mkdir -p drivers/net/wireless/realtek/${{ steps.version_extract.outputs.filename }}
           
 
           cd ../kernel-extracted
           shopt -s nullglob
           entries=(*/)
           if [ ${#entries[@]} -eq 1 ]; then
-            cp -R "${entries[0]}"* ../target-repo/drivers/net/wireless/realtek/${{ steps.version_extract.outputs.version }}/
+            cp -R "${entries[0]}"* ../target-repo/drivers/net/wireless/realtek/${{ steps.version_extract.outputs.filename }}
           else
-            cp -R * ../target-repo/drivers/net/wireless/realtek/${{ steps.version_extract.outputs.version }}/
+            cp -R * ../target-repo/drivers/net/wireless/realtek/${{ steps.version_extract.outputs.filename }}
           fi
 
       - name: Commit and push changes
