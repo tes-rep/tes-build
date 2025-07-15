@@ -17,7 +17,7 @@ on:
 
       driver_type:
         description: 'Path target dalam repo (misalnya: drivers/net/wireless/realtek/rtl8189fs)'
-        required: true
+        required: false
         default: 'drivers/net/wireless/realtek/rtl8189fs'
         type: string
 
