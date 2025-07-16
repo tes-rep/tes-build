@@ -1,23 +1,8 @@
-name: TEST v7
+name: TEST v7 - Copy With Different Source and Target Paths
 
 on:
   workflow_dispatch:
     inputs:
-      copy_mode:
-        description: 'Mode salin: all (semua file) atau custom (hanya folder tertentu)'
-        required: true
-        default: 'all'
-        type: choice
-        options:
-          - all
-          - custom
-
-      folders_to_include:
-        description: 'Folder yang ingin disalin (pisahkan spasi, contoh: src include rtl8189fs)'
-        required: false
-        default: 'src include'
-        type: string
-
       kernel_url:
         description: 'URL file arsip driver (tar.gz, zip, zst) – isi "none" untuk skip download'
         required: false
@@ -25,15 +10,21 @@ on:
         type: string
 
       repo_clone_url:
-        description: 'Repo GitHub driver (jika tidak download). Contoh: https://github.com/ulli-kroll/rtl8189fs.git'
+        description: 'Repo GitHub driver (contoh: https://github.com/unifreq/linux-5.15.y.git)'
         required: false
-        default: 'https://github.com/ulli-kroll/rtl8189fs.git'
+        default: 'https://github.com/unifreq/linux-5.15.y.git'
         type: string
 
       driver_type:
-        description: 'Path target dalam repo (misalnya: drivers/net/wireless/realtek/rtl8189fs)'
-        required: false
-        default: 'drivers/net/wireless/realtek/rtl8189fs'
+        description: 'Path sumber (contoh: drivers/net/wireless/uwe5623)'
+        required: true
+        default: 'drivers/net/wireless/uwe5623'
+        type: string
+
+      target_path:
+        description: 'Path tujuan di repo target (contoh: drivers/staging/uwe5623)'
+        required: true
+        default: 'drivers/staging/uwe5623'
         type: string
 
       target_repo:
@@ -44,22 +35,16 @@ on:
       target_branch:
         description: 'Target branch di repo tujuan'
         required: false
-        default: main
+        default: coba
         type: string
 
 jobs:
-  kernel_sync:
+  sync_driver:
     runs-on: ubuntu-latest
     env:
       PAT: ${{ secrets.TARGET_REPO_PAT }}
 
     steps:
-      - name: Setup Vars
-        id: vars
-        run: |
-          echo "kernel_url=${{ github.event.inputs.kernel_url }}" >> $GITHUB_OUTPUT
-          echo "target_branch=${{ github.event.inputs.target_branch || 'main' }}" >> $GITHUB_OUTPUT
-
       - name: Normalize Target Repo
         id: fixrepo
         run: |
@@ -76,13 +61,11 @@ jobs:
           sudo apt-get install -y aria2 unzip megatools zstd patch
           python3 -m pip install --upgrade gdown
 
-      # === DOWNLOAD MODE ===
       - name: Download Driver Archive
         if: ${{ github.event.inputs.kernel_url != '' && github.event.inputs.kernel_url != 'none' }}
         run: |
           mkdir -p kernel-archive-download
           url="${{ github.event.inputs.kernel_url }}"
-
           if [[ "$url" =~ mega\.nz ]]; then
             megadl --path=kernel-archive-download "$url"
           elif [[ "$url" =~ drive.google.com ]]; then
@@ -101,7 +84,6 @@ jobs:
           file_path=$(ls kernel-archive-download/* | head -n 1)
           mv "$file_path" kernel-archive
           type=$(file kernel-archive)
-
           if [[ "$type" =~ Zstandard ]]; then
             tar --use-compress-program=unzstd -xvf kernel-archive -C kernel-extracted
           elif [[ "$type" =~ gzip ]]; then
@@ -115,63 +97,37 @@ jobs:
             exit 1
           fi
 
-      # === CLONE DRIVER REPO ===
       - name: Clone Driver Repo
         if: ${{ github.event.inputs.kernel_url == '' || github.event.inputs.kernel_url == 'none' }}
         run: |
           git clone --depth=1 "${{ github.event.inputs.repo_clone_url }}" driver-clone
 
-      # === CLONE TARGET REPO ===
       - name: Clone Target Repo
         run: |
           git clone https://x-access-token:${PAT}@github.com/${{ steps.fixrepo.outputs.normalized_repo }}.git target-repo
           cd target-repo
-          git checkout ${{ steps.vars.outputs.target_branch }} \
-            || (echo "Branch not found, creating new branch" && git checkout -b ${{ steps.vars.outputs.target_branch }})
+          git checkout ${{ github.event.inputs.target_branch }} || git checkout -b ${{ github.event.inputs.target_branch }}
 
-      # === COPY FROM REPO (custom or all) ===
-      - name: Copy Driver from Repo
+      - name: Copy Driver from Repo (custom path)
         if: ${{ github.event.inputs.kernel_url == '' || github.event.inputs.kernel_url == 'none' }}
         run: |
-          mkdir -p "target-repo/${{ github.event.inputs.driver_type }}"
-          cd driver-clone
+          src="driver-clone/${{ github.event.inputs.driver_type }}"
+          dst="target-repo/${{ github.event.inputs.target_path }}"
+          mkdir -p "$(dirname "$dst")"
+          cp -r "$src" "$(dirname "$dst")/"
 
-          if [ "${{ github.event.inputs.copy_mode }}" = "custom" ]; then
-            for dir in ${{ github.event.inputs.folders_to_include }}; do
-              if [ -d "$dir" ]; then
-                mkdir -p "../target-repo/${{ github.event.inputs.driver_type }}/$dir"
-                cp -r "$dir/"* "../target-repo/${{ github.event.inputs.driver_type }}/$dir"
-              fi
-            done
-          else
-            cp -r * "../target-repo/${{ github.event.inputs.driver_type }}/"
-          fi
-
-          cd ..
-
-      # === COPY FROM ARCHIVE (custom or all) ===
-      - name: Copy Driver from Archive
+      - name: Copy Driver from Archive (custom path)
         if: ${{ github.event.inputs.kernel_url != '' && github.event.inputs.kernel_url != 'none' }}
         run: |
-          mkdir -p "target-repo/${{ github.event.inputs.driver_type }}"
           cd kernel-extracted
-
           entries=(*/)
           if [ ${#entries[@]} -eq 1 ]; then
             cd "${entries[0]}"
           fi
-
-          if [ "${{ github.event.inputs.copy_mode }}" = "custom" ]; then
-            for dir in ${{ github.event.inputs.folders_to_include }}; do
-              if [ -d "$dir" ]; then
-                mkdir -p "../../target-repo/${{ github.event.inputs.driver_type }}/$dir"
-                cp -r "$dir/"* "../../target-repo/${{ github.event.inputs.driver_type }}/$dir"
-              fi
-            done
-          else
-            cp -r * "../../target-repo/${{ github.event.inputs.driver_type }}/"
-          fi
-
+          src="${{ github.event.inputs.driver_type }}"
+          dst="../../target-repo/${{ github.event.inputs.target_path }}"
+          mkdir -p "$(dirname "$dst")"
+          cp -r "$src" "$(dirname "$dst")/"
           cd ../..
 
       - name: Commit and Push
@@ -179,10 +135,10 @@ jobs:
           cd target-repo
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add "${{ github.event.inputs.driver_type }}"
+          git add "${{ github.event.inputs.target_path }}"
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "Sync driver to ${{ github.event.inputs.driver_type }}"
-            git push -u origin ${{ steps.vars.outputs.target_branch }}
-          fi
+            git commit -m "Sync driver to ${{ github.event.inputs.target_path }}"
+            git push -u origin ${{ github.event.inputs.target_branch }}
+            fi
