@@ -121,10 +121,7 @@ jobs:
           mkdir -p "target-repo/${{ github.event.inputs.driver_type }}"
           cp -r driver-clone/* "target-repo/${{ github.event.inputs.driver_type }}"
 
-          find driver-clone -type f -name "*.patch" | while read patch; do
-            echo "Applying patch: $patch"
-            patch -d target-repo -p1 < "$patch"
-          done
+          
 
       # === COPY & PATCH - FROM ARCHIVE ===
       - name: Copy & Patch from Archive
@@ -140,10 +137,7 @@ jobs:
           fi
           cd ..
 
-          find kernel-extracted -type f -name "*.patch" | while read patch; do
-            echo "Applying patch: $patch"
-            patch -d target-repo -p1 < "$patch"
-          done
+        
 
       - name: Commit and Push
         run: |
@@ -156,3 +150,4 @@ jobs:
           else
             git commit -m "Sync driver to ${{ github.event.inputs.driver_type }}"
             git push -u origin ${{ steps.vars.outputs.target_branch }}
+            fi
