@@ -1,0 +1,196 @@
+name: TEST v10 - Full or Partial Sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      kernel_url:
+        description: 'URL file arsip driver (tar.gz, zip, zst) – isi "none" untuk skip download'
+        required: false
+        default: ''
+        type: string
+
+      repo_clone_url:
+        description: 'Repo GitHub sumber (contoh: https://github.com/unifreq/linux-5.15.y.git)'
+        required: false
+        default: 'https://github.com/unifreq/linux-5.15.y.git'
+        type: string
+
+      driver_type:
+        description: 'Path sumber (kosongkan untuk salin seluruh repo)'
+        required: false
+        default: ''
+        type: string
+
+      target_path:
+        description: 'Path tujuan di repo target (kosongkan untuk root)'
+        required: false
+        default: ''
+        type: string
+
+      target_repo:
+        description: 'Target repo GitHub (contoh: houjie/linux-openwrt)'
+        required: true
+        type: string
+
+      target_branch:
+        description: 'Target branch di repo tujuan'
+        required: false
+        default: coba
+        type: string
+
+      token_option:
+        description: 'Pilih token GitHub (PAT)'
+        required: true
+        default: pat1
+        type: choice
+        options:
+          - pat1
+          - pat2
+
+jobs:
+  sync_driver:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set Token from Input
+        id: choose_token
+        run: |
+          case "${{ github.event.inputs.token_option }}" in
+            pat1)
+              echo "PAT=${{ secrets.TARGET_REPO_PAT }}" >> $GITHUB_ENV
+              ;;
+            pat2)
+              echo "PAT=${{ secrets.TARGET_REPO_PAT2 }}" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "::error ::Pilihan token tidak valid!"
+              exit 1
+              ;;
+          esac
+
+      - name: Normalize Target Repo
+        id: fixrepo
+        run: |
+          repo="${{ github.event.inputs.target_repo }}"
+          if [[ "$repo" == https://github.com/* ]]; then
+            repo="${repo#https://github.com/}"
+            repo="${repo%/}"
+          fi
+          echo "normalized_repo=$repo" >> $GITHUB_OUTPUT
+
+      - name: Validate Inputs
+        if: ${{ github.event.inputs.driver_type != '' && github.event.inputs.target_path == '' }}
+        run: |
+          echo "::error ::'target_path' wajib diisi jika 'driver_type' ditentukan."
+          exit 1
+
+      - name: Install Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y aria2 unzip megatools zstd patch rsync
+          python3 -m pip install --upgrade gdown
+
+      - name: Download Driver Archive
+        if: ${{ github.event.inputs.kernel_url != '' && github.event.inputs.kernel_url != 'none' }}
+        run: |
+          mkdir -p kernel-archive-download
+          url="${{ github.event.inputs.kernel_url }}"
+          if [[ "$url" =~ mega\.nz ]]; then
+            megadl --path=kernel-archive-download "$url"
+          elif [[ "$url" =~ drive.google.com ]]; then
+            FILE_ID=$(echo "$url" | grep -oP '(?<=/d/)[^/]+')
+            [ -z "$FILE_ID" ] && FILE_ID=$(echo "$url" | grep -oP '(?<=id=)[^&]+')
+            [ -z "$FILE_ID" ] && { echo "Invalid Google Drive URL"; exit 1; }
+            cd kernel-archive-download && gdown "https://drive.google.com/uc?id=$FILE_ID" && cd ..
+          else
+            aria2c -q -x 16 -s 16 -d kernel-archive-download "$url"
+          fi
+
+      - name: Extract Archive
+        if: ${{ github.event.inputs.kernel_url != '' && github.event.inputs.kernel_url != 'none' }}
+        run: |
+          mkdir -p kernel-extracted
+          file_path=$(ls kernel-archive-download/* | head -n 1)
+          mv "$file_path" kernel-archive
+          type=$(file kernel-archive)
+          if [[ "$type" =~ Zstandard ]]; then
+            tar --use-compress-program=unzstd -xvf kernel-archive -C kernel-extracted
+          elif [[ "$type" =~ gzip ]]; then
+            tar -xzf kernel-archive -C kernel-extracted
+          elif [[ "$type" =~ Zip ]]; then
+            unzip -o kernel-archive -d kernel-extracted
+          elif [[ "$type" =~ POSIX.*tar ]]; then
+            tar -xf kernel-archive -C kernel-extracted
+          else
+            echo "Unsupported archive format"
+            exit 1
+          fi
+
+      - name: Clone Driver Repo
+        if: ${{ github.event.inputs.kernel_url == '' || github.event.inputs.kernel_url == 'none' }}
+        run: |
+          git clone --depth=1 "${{ github.event.inputs.repo_clone_url }}" driver-clone
+
+      - name: Clone Target Repo
+        run: |
+          git clone https://x-access-token:${{ env.PAT }}@github.com/${{ steps.fixrepo.outputs.normalized_repo }}.git target-repo
+          cd target-repo
+          git checkout ${{ github.event.inputs.target_branch }} || git checkout -b ${{ github.event.inputs.target_branch }}
+
+      - name: Copy All (Repo mode)
+        if: ${{ github.event.inputs.kernel_url == '' && github.event.inputs.driver_type == '' }}
+        run: |
+          rsync -a --exclude='.git' driver-clone/ target-repo/
+
+      - name: Copy All (Archive mode)
+        if: ${{ github.event.inputs.kernel_url != '' && github.event.inputs.driver_type == '' }}
+        run: |
+          cd kernel-extracted
+          entry_count=$(find . -mindepth 1 -maxdepth 1 -type d | wc -l)
+          if [ "$entry_count" -eq 1 ]; then
+            cd "$(find . -mindepth 1 -maxdepth 1 -type d)"
+          fi
+          rsync -a --exclude='.git' ./ ../../target-repo/
+          cd ../..
+
+      - name: Copy Custom Path (Repo mode)
+        if: ${{ github.event.inputs.kernel_url == '' && github.event.inputs.driver_type != '' }}
+        run: |
+          src="driver-clone/${{ github.event.inputs.driver_type }}"
+          dst="target-repo/${{ github.event.inputs.target_path }}"
+          mkdir -p "$(dirname "$dst")"
+          rsync -a --exclude='.git' "$src" "$(dirname "$dst")/"
+
+      - name: Copy Custom Path (Archive mode)
+        if: ${{ github.event.inputs.kernel_url != '' && github.event.inputs.driver_type != '' }}
+        run: |
+          cd kernel-extracted
+          entry_count=$(find . -mindepth 1 -maxdepth 1 -type d | wc -l)
+          if [ "$entry_count" -eq 1 ]; then
+            cd "$(find . -mindepth 1 -maxdepth 1 -type d)"
+          fi
+          src="${{ github.event.inputs.driver_type }}"
+          dst="../../target-repo/${{ github.event.inputs.target_path }}"
+          mkdir -p "$(dirname "$dst")"
+          rsync -a --exclude='.git' "$src" "$(dirname "$dst")/"
+          cd ../..
+
+      - name: Commit and Push
+        run: |
+          cd target-repo
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          if git diff --cached --quiet; then
+            echo "✅ Tidak ada perubahan yang perlu dikomit."
+          else
+            git commit -m "Sync driver or full source from upstream"
+            git log -1 --oneline
+            git push -u origin ${{ github.event.inputs.target_branch }}
+          fi
+
+      - name: List Synced Files
+        run: |
+          echo "📦 Daftar file di target-repo:"
+          cd target-repo
+          find . -type f | sort
