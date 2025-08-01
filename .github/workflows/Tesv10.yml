@@ -45,7 +45,7 @@ on:
         type: choice
         options:
           - pat1
-          - pat2
+          - kernel54
 
 jobs:
   sync_driver:
@@ -59,7 +59,7 @@ jobs:
             pat1)
               echo "PAT=${{ secrets.TARGET_REPO_PAT }}" >> $GITHUB_ENV
               ;;
-            pat2)
+            kernel54)
               echo "PAT=${{ secrets.TARGET_REPO_PAT2 }}" >> $GITHUB_ENV
               ;;
             *)
