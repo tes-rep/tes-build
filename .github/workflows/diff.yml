@@ -1,0 +1,59 @@
+name: Diff and Upload to Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo_a_url:
+        description: 'URL Repo A (Upstream)'
+        required: true
+      repo_a_branch:
+        description: 'Branch Repo A'
+        default: 'main'
+      repo_b_url:
+        description: 'URL Repo B (Custom)'
+        required: true
+      repo_b_branch:
+        description: 'Branch Repo B'
+        default: 'main'
+      release_tag:
+        description: 'Tag untuk Release'
+        required: true
+
+jobs:
+  generate-and-upload:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repo A
+      run: |
+        git clone --depth=1 --branch "${{ github.event.inputs.repo_a_branch }}" \
+          "${{ github.event.inputs.repo_a_url }}" repo_a
+
+    - name: Checkout Repo B
+      run: |
+        git clone --depth=1 --branch "${{ github.event.inputs.repo_b_branch }}" \
+          "${{ github.event.inputs.repo_b_url }}" repo_b
+
+    - name: Generate Diff Patch
+      run: |
+        mkdir -p diff_output
+        diff -ruN repo_a/ repo_b/ > diff_output/full_repo_diff.patch || true
+
+    - name: Upload Patch as Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: full-repo-diff-patch
+        path: diff_output/full_repo_diff.patch
+
+    - name: Upload to GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.event.inputs.release_tag }}
+        name: "Repo Diff Patch - ${{ github.event.inputs.release_tag }}"
+        body: |
+          This release contains the full diff patch between:
+          - Repo A: `${{ github.event.inputs.repo_a_url }} @ ${{ github.event.inputs.repo_a_branch }}`
+          - Repo B: `${{ github.event.inputs.repo_b_url }} @ ${{ github.event.inputs.repo_b_branch }}`
+        files: diff_output/full_repo_diff.patch
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
