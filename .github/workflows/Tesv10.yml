@@ -46,7 +46,7 @@ on:
         options:
           - pat1
           - kernel54
-
+          - xidz
 jobs:
   sync_driver:
     runs-on: ubuntu-latest
@@ -62,6 +62,9 @@ jobs:
             kernel54)
               echo "PAT=${{ secrets.TARGET_REPO_PAT2 }}" >> $GITHUB_ENV
               ;;
+            xidz)
+              echo "PAT=${{ secrets.TARGET_REPO_PAT3 }}" >> $GITHUB_ENV
+              ;;  
             *)
               echo "::error ::Pilihan token tidak valid!"
               exit 1
