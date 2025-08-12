@@ -44,9 +44,9 @@ on:
         default: pat1
         type: choice
         options:
-          - pat1
+          - tes-rep
           - kernel54
-          - xidz
+          - dirgha80
 jobs:
   sync_driver:
     runs-on: ubuntu-latest
@@ -56,10 +56,10 @@ jobs:
         id: choose_token
         run: |
           case "${{ github.event.inputs.token_option }}" in
-            pat1)
+            tes-rep)
               echo "PAT=${{ secrets.TARGET_REPO_PAT }}" >> $GITHUB_ENV
               ;;
-            kernel54)
+            dirgha80)
               echo "PAT=${{ secrets.TARGET_REPO_PAT2 }}" >> $GITHUB_ENV
               ;;
             xidz)
