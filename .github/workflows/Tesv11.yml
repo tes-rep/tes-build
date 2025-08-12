@@ -49,7 +49,7 @@ on:
 
 jobs:
   sync_driver:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Set Token from Input
@@ -91,8 +91,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y aria2 unzip megatools zstd wget npm
-          python3 -m pip install --upgrade gdown
-          sudo npm install -g mediafire-dl
+          sudo pip3 install gdown
+          sudo pip3 install git+https://github.com/Juvenal-Yescas/mediafire-dl
+          wget https://mega.nz/linux/repo/xUbuntu_24.04/amd64/megacmd-xUbuntu_24.04_amd64.deb && sudo apt install "$PWD/megacmd-xUbuntu_24.04_amd64.deb"
 
       - name: Download file ${{ github.event.inputs.type_file }}
         if: ${{ github.event.inputs.rootfs_url != '' }}
