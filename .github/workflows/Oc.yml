@@ -1,0 +1,86 @@
+name: Auto Build OpenClash IPK (Single Arch)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *'  # opsional: build setiap jam, bisa dihapus
+
+jobs:
+  build-openclash:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential git curl bzip2 unzip
+
+      - name: Download and extract OpenWrt SDK (ar71xx)
+        run: |
+          SDK_URL="https://archive.openwrt.org/chaos_calmer/15.05.1/ar71xx/generic/OpenWrt-SDK-15.05.1-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-x86_64.tar.bz2"
+          curl -SLk --connect-timeout 30 --retry 2 "$SDK_URL" -o "/tmp/SDK.tar.bz2"
+          cd /tmp
+          tar xjf SDK.tar.bz2
+          SDK_DIR=$(ls -d OpenWrt-SDK-15.05.1-*)
+          echo "SDK_DIR=$SDK_DIR" >> $GITHUB_ENV
+
+      - name: Sparse checkout OpenClash dev branch
+        run: |
+          cd /tmp/$SDK_DIR/package
+          mkdir -p luci-app-openclash
+          cd luci-app-openclash
+          git init
+          git remote add -f origin https://github.com/vernesong/OpenClash.git
+          git config core.sparseCheckout true
+          echo "luci-app-openclash" >> .git/info/sparse-checkout
+          git checkout dev
+          git pull --depth 1 origin dev
+
+      - name: Check if Makefile changed
+        id: check_makefile
+        run: |
+          cd /tmp/$SDK_DIR/package/luci-app-openclash/luci-app-openclash
+          HASH=$(sha1sum Makefile | cut -d' ' -f1)
+          echo "new_hash=$HASH" >> $GITHUB_OUTPUT
+          BUILD_HASH_FILE="/tmp/$SDK_DIR/.last_build_hash"
+          if [ -f "$BUILD_HASH_FILE" ] && grep -q "$HASH" "$BUILD_HASH_FILE"; then
+            echo "Makefile unchanged, skipping build."
+            exit 0
+          fi
+          echo "$HASH" > "$BUILD_HASH_FILE"
+
+      - name: Compile po2lmo (if needed)
+        run: |
+          cd /tmp/$SDK_DIR/package/luci-app-openclash/luci-app-openclash/tools/po2lmo || exit 0
+          make && sudo make install || echo "po2lmo already installed"
+
+      - name: Build OpenClash IPK
+        run: |
+          cd /tmp/$SDK_DIR
+          make package/luci-app-openclash/luci-app-openclash/compile V=99
+
+      - name: Find generated IPK
+        id: find_ipk
+        run: |
+          IPK_FILE=$(find /tmp/$SDK_DIR/bin/ar71xx/packages/base/ -name "luci-app-openclash_*-beta_all.ipk" | head -n 1)
+          echo "ipk_file=$IPK_FILE" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "dev-$(date +'%Y%m%d%H%M')"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload IPK to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.create_release.outputs.tag_name }}
+          name: luci-app-openclash_ar71xx_$(date +'%Y%m%d%H%M')_beta_all.ipk
+          asset_path: ${{ steps.find_ipk.outputs.ipk_file }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
