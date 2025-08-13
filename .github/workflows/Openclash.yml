@@ -1,0 +1,91 @@
+name: Auto Build and Release OpenClash IPK
+
+on:
+  push:
+    branches:
+      - main  # Bisa tetap branch utama repo Anda
+
+jobs:
+  build-ipk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v3
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential git libncurses5-dev libncursesw5-dev zlib1g-dev gawk flex quilt xsltproc libssl-dev wget unzip python3-distutils
+
+      - name: Setup OpenWrt
+        run: |
+          git clone https://github.com/openwrt/openwrt.git openwrt
+          cd openwrt
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Clone OpenClash package branch dev
+        run: |
+          cd openwrt/package
+          git clone --branch dev https://github.com/vernesong/OpenClash.git luci-app-openclash
+
+      - name: Read OpenClash version from Makefile
+        id: read_version
+        run: |
+          PKG_DIR="openwrt/package/luci-app-openclash"
+          VERSION=$(grep '^PKG_VERSION:=' $PKG_DIR/Makefile | cut -d'=' -f2 | tr -d ' ')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if release exists
+        id: check_release
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const tag = '${{ steps.read_version.outputs.tag }}';
+            try {
+              await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: tag
+              });
+              return true;
+            } catch {
+              return false;
+            }
+          result-encoding: string
+
+      - name: Stop if release already exists
+        if: ${{ steps.check_release.outputs.result == 'true' }}
+        run: |
+          echo "Release for this version already exists. Exiting."
+          exit 0
+
+      - name: Build OpenClash IPK
+        run: |
+          cd openwrt
+          make package/luci-app-openclash/compile V=s
+
+      - name: Find generated IPK
+        id: find_ipk
+        run: |
+          IPK_FILE=$(find openwrt/bin/packages -name "*.ipk" | head -n 1)
+          echo "ipk_file=$IPK_FILE" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.read_version.outputs.tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload OpenClash IPK to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.read_version.outputs.tag }}
+          name: luci-app-openclash_${{ steps.read_version.outputs.version }}.ipk
+          asset_path: ${{ steps.find_ipk.outputs.ipk_file }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
