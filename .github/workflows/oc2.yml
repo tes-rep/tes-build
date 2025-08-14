@@ -11,11 +11,26 @@ jobs:
 
     steps:
     # 1. Cek versi terbaru dari vernesong/dev
-    - name: Cek versi terbaru
+    - name: Cache last built version
+      uses: actions/cache@v4
+      with:
+        path: last_version.txt
+        key: last-version-cache
+
+    - name: Cek versi terbaru dari vernesong/dev
       run: |
         LATEST_VER=$(curl -s https://raw.githubusercontent.com/vernesong/OpenClash/dev/luci-app-openclash/Makefile | grep -oP '(?<=PKG_VERSION:=)[0-9\.]+')
         echo "LATEST_VER=$LATEST_VER" >> $GITHUB_ENV
         echo "Versi terbaru: $LATEST_VER"
+
+        if [ -f last_version.txt ]; then
+          LAST_VER=$(cat last_version.txt)
+          if [ "$LAST_VER" = "$LATEST_VER" ]; then
+            echo "Versi sama ($LATEST_VER), skip build."
+            exit 0
+          fi
+        fi
+        echo "$LATEST_VER" > last_version.txt
 
     # 2. Checkout repo target
     - name: Checkout repo
