@@ -1,4 +1,4 @@
-name: Build luci-app-openclash (Auto Version)
+name: Build luci-app-openclash (Auto Version)2
 
 on:
   workflow_dispatch:
@@ -80,15 +80,18 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/SDK
         make package/luci-app-openclash/luci-app-openclash/compile V=99
+        
     - name: Compile luci-app-openclash-apk
       run: |
         cd $GITHUB_WORKSPACE/SNAPSDK
+        make defconfig
         make package/luci-app-openclash/luci-app-openclash/compile V=99    
 
     - name: Ambil file IPK
       run: |
         mkdir release
         find $GITHUB_WORKSPACE/SDK/bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} release/luci-app-openclash_${LATEST_VER}_all.ipk \;
+        find $GITHUB_WORKSPACE/SNAPSDK/bin/ -type f -name "luci-app-openclash_*.apk" -exec cp {} release/luci-app-openclash_${LATEST_VER}.apk \;
 
     - name: Upload to Release in tes-rep/OpenClash
       uses: softprops/action-gh-release@v1
@@ -96,6 +99,6 @@ jobs:
         repository: tes-rep/OpenClash  # Menentukan repo target
         tag_name: v${{ env.LATEST_VER }}
         name: "v${{ env.LATEST_VER }}"
-        files: release/luci-app-openclash_${{ env.LATEST_VER }}_all.ipk
+        files: release/*
       env:
         GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}  # Menggunakan PAT dari secrets
