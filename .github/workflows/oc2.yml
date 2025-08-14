@@ -44,6 +44,7 @@ jobs:
         cd /tmp
         tar xjf SDK.tar.bz2
         mv OpenWrt-SDK-* $GITHUB_WORKSPACE/SDK
+        rm -rf tmp/*
 
     - name: Install OpenWrt SNAPSHPT SDK
       run: |
