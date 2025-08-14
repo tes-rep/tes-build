@@ -42,15 +42,16 @@ jobs:
 
     - name: Clone luci-app-openclash dari vernesong/dev
       run: |
-        cd $GITHUB_WORKSPACE/SDK/package
-        mkdir luci-app-openclash
-        cd luci-app-openclash
-        git init
-        git remote add -f origin https://github.com/vernesong/OpenClash.git
-        git config core.sparseCheckout true
-        echo "luci-app-openclash" >> .git/info/sparse-checkout
-        git pull --depth 1 origin dev
-        git branch --set-upstream-to=origin/dev dev
+       cd $GITHUB_WORKSPACE/SDK/package
+       mkdir luci-app-openclash
+       cd luci-app-openclash
+       git init
+       git remote add origin https://github.com/vernesong/OpenClash.git
+       git config core.sparseCheckout true
+       echo "luci-app-openclash" >> .git/info/sparse-checkout
+       git fetch origin dev
+       git checkout dev
+
 
     - name: Compile po2lmo
       run: |
