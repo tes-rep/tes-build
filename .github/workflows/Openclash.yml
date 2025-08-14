@@ -48,7 +48,8 @@ jobs:
 
     - name: Compile po2lmo (IPK)
       run: |
-        cd $GITHUB_WORKSPACE/SDK/package/pushd luci-app-openclash/luci-app-openclash/tools/po2lmo
+        cd $GITHUB_WORKSPACE/SDK/package/
+        pushd luci-app-openclash/luci-app-openclash/tools/po2lmo
         make && sudo make install
         popd
 
@@ -79,8 +80,10 @@ jobs:
 
     - name: Compile po2lmo (APK)
       run: |
-        cd $GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
+        cd $GITHUB_WORKSPACE/SNAPSDK/package/
+        pushd luci-app-openclash/luci-app-openclash/tools/po2lmo
         make && sudo make install
+        popd
 
     - name: Compile luci-app-openclash (APK)
       run: |
