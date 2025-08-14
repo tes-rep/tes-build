@@ -94,8 +94,8 @@ jobs:
     - name: Upload to Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ env.LATEST_VER }}
-        name: "OpenClash ${{ env.LATEST_VER }}"
+        tag_name: v${{ env.LATEST_VER }}
+        name: "v${{ env.LATEST_VER }}"
         files: release/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
