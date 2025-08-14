@@ -1,92 +1,78 @@
-name: Auto Build and Release OpenClash IPK
+name: Build luci-app-openclash (vernesong dev)
 
 on:
-  push:
-    branches:
-      - main  # Bisa tetap branch utama repo Anda
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
 
 jobs:
-  build-ipk:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout this repo
-        uses: actions/checkout@v3
+    - name: Cache last built version
+      uses: actions/cache@v4
+      with:
+        path: last_version.txt
+        key: last-version-cache
 
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential git libncurses5-dev libncursesw5-dev zlib1g-dev gawk flex quilt xsltproc libssl-dev wget unzip 
-          sudo apt-get install -y python3 python3-pip
+    - name: Cek versi terbaru dari vernesong/dev
+      run: |
+        LATEST_VER=$(curl -s https://raw.githubusercontent.com/vernesong/OpenClash/dev/luci-app-openclash/Makefile | grep -oP '(?<=PKG_VERSION:=)[0-9\.]+')
+        echo "LATEST_VER=$LATEST_VER" >> $GITHUB_ENV
+        echo "Versi terbaru: $LATEST_VER"
 
-      - name: Setup OpenWrt
-        run: |
-          git clone https://github.com/openwrt/openwrt.git openwrt
-          cd openwrt
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
+        if [ -f last_version.txt ]; then
+          LAST_VER=$(cat last_version.txt)
+          if [ "$LAST_VER" = "$LATEST_VER" ]; then
+            echo "Versi sama ($LATEST_VER), skip build."
+            exit 0
+          fi
+        fi
+        echo "$LATEST_VER" > last_version.txt
 
-      - name: Clone OpenClash package branch dev
-        run: |
-          cd openwrt/package
-          git clone --branch dev https://github.com/vernesong/OpenClash.git luci-app-openclash
+    - name: Download OpenWrt SDK 15.05.1
+      run: |
+        curl -SLk --connect-timeout 30 --retry 2 \
+          "https://archive.openwrt.org/chaos_calmer/15.05.1/ar71xx/generic/OpenWrt-SDK-15.05.1-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-x86_64.tar.bz2" \
+          -o "/tmp/SDK.tar.bz2"
+        cd /tmp
+        tar xjf SDK.tar.bz2
+        mv OpenWrt-SDK-* $GITHUB_WORKSPACE/SDK
 
-      - name: Read OpenClash version from Makefile
-        id: read_version
-        run: |
-          PKG_DIR="openwrt/package/luci-app-openclash"
-          VERSION=$(grep '^PKG_VERSION:=' $PKG_DIR/Makefile | cut -d'=' -f2 | tr -d ' ')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+    - name: Clone luci-app-openclash dari vernesong/dev
+      run: |
+        cd $GITHUB_WORKSPACE/SDK/package
+        mkdir luci-app-openclash
+        cd luci-app-openclash
+        git init
+        git remote add -f origin https://github.com/vernesong/OpenClash.git
+        git config core.sparseCheckout true
+        echo "luci-app-openclash" >> .git/info/sparse-checkout
+        git pull --depth 1 origin dev
+        git branch --set-upstream-to=origin/dev dev
 
-      - name: Check if release exists
-        id: check_release
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const tag = '${{ steps.read_version.outputs.tag }}';
-            try {
-              await github.rest.repos.getReleaseByTag({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag: tag
-              });
-              return true;
-            } catch {
-              return false;
-            }
-          result-encoding: string
+    - name: Compile po2lmo
+      run: |
+        cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
+        make && sudo make install
 
-      - name: Stop if release already exists
-        if: ${{ steps.check_release.outputs.result == 'true' }}
-        run: |
-          echo "Release for this version already exists. Exiting."
-          exit 0
+    - name: Compile luci-app-openclash
+      run: |
+        cd $GITHUB_WORKSPACE/SDK
+        make package/luci-app-openclash/luci-app-openclash/compile V=99
 
-      - name: Build OpenClash IPK
-        run: |
-          cd openwrt
-          make package/luci-app-openclash/compile V=s
+    - name: Ambil file IPK
+      run: |
+        mkdir release
+        find $GITHUB_WORKSPACE/SDK/bin/ -type f -name "luci-app-openclash_*.ipk" \
+          -exec cp {} release/luci-app-openclash_${LATEST_VER}.ipk \;
 
-      - name: Find generated IPK
-        id: find_ipk
-        run: |
-          IPK_FILE=$(find openwrt/bin/packages -name "*.ipk" | head -n 1)
-          echo "ipk_file=$IPK_FILE" >> $GITHUB_OUTPUT
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.read_version.outputs.tag }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload OpenClash IPK to Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.read_version.outputs.tag }}
-          name: luci-app-openclash_${{ steps.read_version.outputs.version }}.ipk
-          asset_path: ${{ steps.find_ipk.outputs.ipk_file }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Upload to Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ env.LATEST_VER }}
+        name: "OpenClash ${{ env.LATEST_VER }}"
+        files: release/luci-app-openclash_${{ env.LATEST_VER }}.ipk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
