@@ -47,15 +47,16 @@ jobs:
 
     - name: Install OpenWrt SNAPSHPT SDK
       run: |
-          mkdir -p tmp
-          BASE_URL="https://downloads.openwrt.org/snapshots/targets/x86/64/"
-          SDK_NAME=$(curl -s $BASE_URL | grep -oE 'openwrt-sdk-x86-64[^"]+\.tar\.zst' | head -n 1)
-          curl -SLk --connect-timeout 30 --retry 2 "$BASE_URL/$SDK_NAME" -o "./tmp/SNAPSDK.tar.zst"
-          cd /tmp
-          zstd -d SNAPSDK.tar.zst
-          tar xf SNAPSDK.tar
-          SDK_DIR=$(tar tf SNAPSDK.tar | head -n 1 | cut -d/ -f1)
-          mv "$SDK_DIR" $GITHUB_WORKSPACE/SNAPSDK 
+        mkdir -p tmp
+        BASE_URL="https://downloads.openwrt.org/snapshots/targets/x86/64/"
+        SDK_NAME=$(curl -s $BASE_URL | grep -oE 'openwrt-sdk-x86-64[^"]+\.tar\.zst' | head -n 1)
+        curl -SLk --connect-timeout 30 --retry 2 "$BASE_URL/$SDK_NAME" -o "./tmp/SNAPSDK.tar.zst"
+        cd tmp
+        zstd -d SNAPSDK.tar.zst
+        tar xf SNAPSDK.tar
+        SDK_DIR=$(tar tf SNAPSDK.tar | head -n 1 | cut -d/ -f1)
+        mv "$SDK_DIR" $GITHUB_WORKSPACE/SNAPSDK
+
 
     - name: Clone luci-app-openclash dari vernesong/dev
       run: |
