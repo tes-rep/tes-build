@@ -75,9 +75,10 @@ jobs:
     - name: Upload to Release in tes-rep/OpenClash
       uses: softprops/action-gh-release@v1
       with:
-        repository: tes-rep/OpenClash
+        repository: tes-rep/OpenClash  # Menentukan repo target
         tag_name: ${{ env.LATEST_VER }}
         name: "OpenClash ${{ env.LATEST_VER }}"
         files: release/luci-app-openclash_${{ env.LATEST_VER }}.ipk
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}  # Menggunakan PAT dari secrets
+
