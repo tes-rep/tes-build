@@ -1,0 +1,101 @@
+name: Build luci-app-openclash (Auto Version)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'  # Cek setiap 6 jam
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Cache last built version
+      uses: actions/cache@v4
+      with:
+        path: last_version.txt
+        key: last-version-cache
+
+    - name: Cek versi terbaru dari vernesong/dev
+      run: |
+        LATEST_VER=$(curl -s https://raw.githubusercontent.com/vernesong/OpenClash/dev/luci-app-openclash/Makefile | grep -oP '(?<=PKG_VERSION:=)[0-9\.]+')
+        echo "LATEST_VER=$LATEST_VER" >> $GITHUB_ENV
+        echo "Versi terbaru: $LATEST_VER"
+
+        if [ -f last_version.txt ]; then
+          LAST_VER=$(cat last_version.txt)
+          if [ "$LAST_VER" = "$LATEST_VER" ]; then
+            echo "Versi sama ($LATEST_VER), skip build."
+            exit 0
+          fi
+        fi
+        echo "$LATEST_VER" > last_version.txt
+
+    - name: Checkout repo tes-rep/OpenClash
+      uses: actions/checkout@v4
+      with:
+        repository: tes-rep/OpenClash
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Download OpenWrt SDK 15.05.1
+      run: |
+        mkdir -p tmp
+        curl -SLk --retry 3 "https://archive.openwrt.org/chaos_calmer/15.05.1/ar71xx/generic/OpenWrt-SDK-15.05.1-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-x86_64.tar.bz2" -o "/tmp/SDK.tar.bz2"
+        cd /tmp
+        tar xjf SDK.tar.bz2
+        mv OpenWrt-SDK-* $GITHUB_WORKSPACE/SDK
+
+    - name: Install OpenWrt SNAPSHPT SDK
+      run: |
+          mkdir -p tmp
+          BASE_URL="https://downloads.openwrt.org/snapshots/targets/x86/64/"
+          SDK_NAME=$(curl -s $BASE_URL | grep -oE 'openwrt-sdk-x86-64[^"]+\.tar\.zst' | head -n 1)
+          curl -SLk --connect-timeout 30 --retry 2 "$BASE_URL/$SDK_NAME" -o "./tmp/SNAPSDK.tar.zst"
+          cd /tmp
+          zstd -d SNAPSDK.tar.zst
+          tar xf SNAPSDK.tar
+          SDK_DIR=$(tar tf SNAPSDK.tar | head -n 1 | cut -d/ -f1)
+          mv "$SDK_DIR" $GITHUB_WORKSPACE/SNAPSDK 
+
+    - name: Clone luci-app-openclash dari vernesong/dev
+      run: |
+       cd $GITHUB_WORKSPACE/SDK/package
+       mkdir luci-app-openclash
+       cd luci-app-openclash
+       git init
+       git remote add origin https://github.com/vernesong/OpenClash.git
+       git config core.sparseCheckout true
+       echo "luci-app-openclash" >> .git/info/sparse-checkout
+       git fetch origin dev
+       git checkout dev
+
+    - name: Compile po2lmo
+      run: |
+        cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
+        make && sudo make install
+        cd $GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
+        make && sudo make install
+
+    - name: Compile luci-app-openclash-ipk
+      run: |
+        cd $GITHUB_WORKSPACE/SDK
+        make package/luci-app-openclash/luci-app-openclash/compile V=99
+    - name: Compile luci-app-openclash-apk
+      run: |
+        cd $GITHUB_WORKSPACE/SNAPSDK
+        make package/luci-app-openclash/luci-app-openclash/compile V=99    
+
+    - name: Ambil file IPK
+      run: |
+        mkdir release
+        find $GITHUB_WORKSPACE/SDK/bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} release/luci-app-openclash_${LATEST_VER}_all.ipk \;
+
+    - name: Upload to Release in tes-rep/OpenClash
+      uses: softprops/action-gh-release@v1
+      with:
+        repository: tes-rep/OpenClash  # Menentukan repo target
+        tag_name: v${{ env.LATEST_VER }}
+        name: "v${{ env.LATEST_VER }}"
+        files: release/luci-app-openclash_${{ env.LATEST_VER }}_all.ipk
+      env:
+        GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}  # Menggunakan PAT dari secrets
