@@ -86,7 +86,7 @@ jobs:
         cd $GITHUB_WORKSPACE/SNAPSDK
         make defconfig
         make package/luci-app-openclash/luci-app-openclash/compile V=s
-        find bin/ -type f -name "luci-app-openclash*.apk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${LATEST_VER}.apk \;
+        find bin/ -type f -name "luci-app-openclash*.apk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash-${LATEST_VER}.apk \;
 
     - name: Bersihkan SDK snapshot
       run: rm -rf $GITHUB_WORKSPACE/SNAPSDK /tmp/sdk_snap /tmp/SNAPSDK.tar.zst
