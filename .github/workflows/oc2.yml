@@ -41,13 +41,15 @@ jobs:
 
     - name: Compile po2lmo (IPK)
       run: |
-        cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
+        cd $GITHUB_WORKSPACE/SDK/package/
+        pushd luci-app-openclash/luci-app-openclash/tools/po2lmo
         make && sudo make install
+        popd
 
     - name: Compile luci-app-openclash (IPK)
       run: |
         cd $GITHUB_WORKSPACE/SDK
-        make package/luci-app-openclash/luci-app-openclash/compile V=s
+        make package/luci-app-openclash/luci-app-openclash/compile V=99
         find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${LATEST_VER}_all.ipk \;
 
     - name: Bersihkan SDK lama
@@ -71,14 +73,16 @@ jobs:
 
     - name: Compile po2lmo (APK)
       run: |
-        cd $GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
+        cd $GITHUB_WORKSPACE/SNAPSDK/package/
+        pushd luci-app-openclash/luci-app-openclash/tools/po2lmo
         make && sudo make install
+        popd
 
     - name: Compile luci-app-openclash (APK)
       run: |
         cd $GITHUB_WORKSPACE/SNAPSDK
         make defconfig
-        make package/luci-app-openclash/luci-app-openclash/compile V=s
+        make package/luci-app-openclash/luci-app-openclash/compile V=99
         find bin/ -type f -name "luci-app-openclash*.apk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash-${LATEST_VER}.apk \;
 
     - name: Bersihkan SDK snapshot
