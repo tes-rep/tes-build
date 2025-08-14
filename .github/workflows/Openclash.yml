@@ -96,6 +96,6 @@ jobs:
       with:
         tag_name: ${{ env.LATEST_VER }}
         name: "OpenClash ${{ env.LATEST_VER }}"
-        files: release/luci-app-openclash_${{ env.LATEST_VER }}.ipk
+        files: release/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
