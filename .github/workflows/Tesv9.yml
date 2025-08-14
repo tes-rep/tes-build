@@ -1,8 +1,8 @@
 name: TEST v9 - Full or Partial Sync
 
 on:
-  workflow_dispatch:
-    inputs:
+ # workflow_dispatch:
+   # inputs:
       kernel_url:
         description: 'URL file arsip driver (tar.gz, zip, zst) – isi "none" untuk skip download'
         required: false
