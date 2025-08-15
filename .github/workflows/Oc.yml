@@ -49,8 +49,13 @@ jobs:
       run: |
         git clone --depth 5 --branch dev https://github.com/vernesong/OpenClash.git /tmp/OpenClash
         cd /tmp/OpenClash
-        LAST_COMMITS=$(git log -5 --pretty=format:"%h - %s")
-        echo "last_commits=$LAST_COMMITS" >> $GITHUB_OUTPUT
+
+        # Ambil 5 commit terakhir, ganti karakter ':' menjadi '-' atau escape
+        LAST_COMMITS=$(git log -5 --pretty=format:"%h - %s" | sed 's/:/-/g')
+
+        echo "last_commits<<EOF" >> $GITHUB_OUTPUT
+        echo "$LAST_COMMITS" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
 
     # 4️⃣ Build IPK & APK (hanya jika versi baru)
     - name: Build OpenClash
@@ -107,7 +112,6 @@ jobs:
 
     # 5️⃣ Upload ke Release (hanya jika versi baru)
     - name: Upload ke Release
-      if: env.SKIP_BUILD == 'false'
       uses: softprops/action-gh-release@v1
       with:
         repository: tes-rep/OpenClash
