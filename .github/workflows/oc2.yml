@@ -10,14 +10,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Checkout repo
-    - name: Checkout repo
-      uses: actions/checkout@v4
-      with:
-        repository: tes-rep/OpenClash
-        token: ${{ secrets.TARGET_REPO_PAT3 }}
-        fetch-depth: 0
-
     # 2. Cek versi terbaru dari vernesong/dev
     - name: Cek versi terbaru
       id: check_version
