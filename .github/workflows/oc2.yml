@@ -130,6 +130,12 @@ jobs:
         repository: tes-rep/OpenClash
         tag_name: v${{ env.LATEST_VER }}
         name: "v${{ env.LATEST_VER }}"
+        body: |
+          ## OpenClash v${{ env.LATEST_VER }}
+          **Changelog:**
+          - Update versi terbaru dari vernesong/dev
+          - Build IPK & APK
+          - Minor bug fixes
         files: release/*
       env:
         GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
