@@ -125,12 +125,11 @@ jobs:
 
     # 6. Upload ke Release - hanya jika build dijalankan
     - name: Upload ke Release
-      if: env.SKIP_BUILD == 'false'
       uses: softprops/action-gh-release@v1
       with:
         repository: tes-rep/OpenClash
         tag_name: v${{ env.LATEST_VER }}
         name: "v${{ env.LATEST_VER }}"
-        files: $GITHUB_WORKSPACE/release/*
+        files: release/*
       env:
         GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
