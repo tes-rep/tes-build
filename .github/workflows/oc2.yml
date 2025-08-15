@@ -1,4 +1,4 @@
-name: Build luci-app-openclash uo ke tes-rep
+name: Build luci-app-openclash ke tes-rep
 
 on:
   workflow_dispatch:
@@ -10,62 +10,64 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 2. Cek versi terbaru dari vernesong/dev
-    # Checkout repo build
-    - uses: actions/checkout@v4
+    # 1. Checkout repo build (cepat)
+    - name: Checkout repo build
+      uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        fetch-depth: 0   # untuk bisa commit last_version.txt
+        fetch-depth: 10   # lebih cepat tapi masih bisa commit last_version.txt
 
-# Ambil versi terbaru
-    - run: |
-       LATEST_VER=$(curl -s https://raw.githubusercontent.com/vernesong/OpenClash/dev/luci-app-openclash/Makefile | grep -oP '(?<=PKG_VERSION:=)[0-9\.]+')
-       echo "$LATEST_VER"
+    # 2. Cek versi terbaru dan set SKIP_BUILD
+    - name: Cek versi terbaru
+      run: |
+        LATEST_VER=$(curl -s https://raw.githubusercontent.com/vernesong/OpenClash/dev/luci-app-openclash/Makefile | grep -oP '(?<=PKG_VERSION:=)[0-9\.]+')
+        echo "LATEST_VER=$LATEST_VER" >> $GITHUB_ENV
+        echo "Versi terbaru: $LATEST_VER"
 
-# Baca versi terakhir dari repo build
-    - run: |
-       if [ -f last_version.txt ]; then
-       LAST_VER=$(cat last_version.txt)
-       else
-       LAST_VER=""
-       fi
+        if [ -f last_version.txt ]; then
+          LAST_VER=$(cat last_version.txt)
+        else
+          LAST_VER=""
+        fi
 
-# Bandingkan versi
-    - run: |
-       if [ "$LAST_VER" != "$LATEST_VER" ]; then
-       echo "$LATEST_VER" > last_version.txt
-       git config user.name "github-actions"
-       git config user.email "actions@github.com"
-       git add last_version.txt
-       git commit -m "Update last_version.txt ke $LATEST_VER"
-       git push
-       else
-       echo "Versi sama, skip build"
-       fi
+        if [ "$LAST_VER" = "$LATEST_VER" ]; then
+          echo "SKIP_BUILD=true" >> $GITHUB_ENV
+          echo "Versi sama, skip build."
+        else
+          echo "$LATEST_VER" > last_version.txt
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add last_version.txt
+          git commit -m "Update last_version.txt ke $LATEST_VER"
+          git push
+          echo "SKIP_BUILD=false" >> $GITHUB_ENV
+        fi
 
-    # 4. Checkout repo target
-    - name: Checkout repo
+    # 3. Checkout repo release
+    - name: Checkout repo release
       uses: actions/checkout@v4
       with:
         repository: tes-rep/OpenClash
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.TARGET_REPO_PAT3 }}
 
-    # 5. ==================== BUILD SDK LAMA (IPK) ====================
+    # 4. BUILD SDK LAMA (IPK) - hanya jika versi baru
     - name: Download & Ekstrak SDK 15.05.1
+      if: env.SKIP_BUILD == 'false'
       run: |
-        mkdir -p $GITHUB_WORKSPACE/release
-        mkdir -p /tmp/sdk_old
+        mkdir -p $GITHUB_WORKSPACE/release /tmp/sdk_old
         curl -SLk --retry 3 "https://archive.openwrt.org/chaos_calmer/15.05.1/ar71xx/generic/OpenWrt-SDK-15.05.1-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-x86_64.tar.bz2" -o /tmp/SDK.tar.bz2
         tar -xjf /tmp/SDK.tar.bz2 -C /tmp/sdk_old
         mv /tmp/sdk_old/OpenWrt-SDK-* $GITHUB_WORKSPACE/SDK
 
     - name: Clone luci-app-openclash (IPK)
+      if: env.SKIP_BUILD == 'false'
       run: |
         cd $GITHUB_WORKSPACE/SDK/package
         git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
         cd luci-app-openclash && git sparse-checkout set luci-app-openclash
 
     - name: Compile po2lmo (IPK)
+      if: env.SKIP_BUILD == 'false'
       run: |
         cd $GITHUB_WORKSPACE/SDK/package/
         pushd luci-app-openclash/luci-app-openclash/tools/po2lmo
@@ -73,16 +75,19 @@ jobs:
         popd
 
     - name: Compile luci-app-openclash (IPK)
+      if: env.SKIP_BUILD == 'false'
       run: |
         cd $GITHUB_WORKSPACE/SDK
         make package/luci-app-openclash/luci-app-openclash/compile V=99
         find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${LATEST_VER}_all.ipk \;
 
     - name: Bersihkan SDK lama
+      if: env.SKIP_BUILD == 'false'
       run: rm -rf $GITHUB_WORKSPACE/SDK /tmp/sdk_old /tmp/SDK.tar.bz2
 
-    # 6. ==================== BUILD SDK SNAPSHOT (APK) ====================
+    # 5. BUILD SDK SNAPSHOT (APK) - hanya jika versi baru
     - name: Download & Ekstrak SDK Snapshot
+      if: env.SKIP_BUILD == 'false'
       run: |
         mkdir -p /tmp/sdk_snap
         BASE_URL="https://downloads.openwrt.org/snapshots/targets/x86/64"
@@ -92,12 +97,14 @@ jobs:
         mv /tmp/sdk_snap/openwrt-sdk-* $GITHUB_WORKSPACE/SNAPSDK
 
     - name: Clone luci-app-openclash (APK)
+      if: env.SKIP_BUILD == 'false'
       run: |
         cd $GITHUB_WORKSPACE/SNAPSDK/package
         git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
         cd luci-app-openclash && git sparse-checkout set luci-app-openclash
 
     - name: Compile po2lmo (APK)
+      if: env.SKIP_BUILD == 'false'
       run: |
         cd $GITHUB_WORKSPACE/SNAPSDK/package/
         pushd luci-app-openclash/luci-app-openclash/tools/po2lmo
@@ -105,6 +112,7 @@ jobs:
         popd
 
     - name: Compile luci-app-openclash (APK)
+      if: env.SKIP_BUILD == 'false'
       run: |
         cd $GITHUB_WORKSPACE/SNAPSDK
         make defconfig
@@ -112,15 +120,17 @@ jobs:
         find bin/ -type f -name "luci-app-openclash*.apk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash-${LATEST_VER}.apk \;
 
     - name: Bersihkan SDK snapshot
+      if: env.SKIP_BUILD == 'false'
       run: rm -rf $GITHUB_WORKSPACE/SNAPSDK /tmp/sdk_snap /tmp/SNAPSDK.tar.zst
 
-    # 7. Upload ke Release
+    # 6. Upload ke Release - hanya jika build dijalankan
     - name: Upload ke Release
+      if: env.SKIP_BUILD == 'false'
       uses: softprops/action-gh-release@v1
       with:
         repository: tes-rep/OpenClash
         tag_name: v${{ env.LATEST_VER }}
         name: "v${{ env.LATEST_VER }}"
-        files: release/*
+        files: $GITHUB_WORKSPACE/release/*
       env:
         GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
