@@ -11,40 +11,37 @@ jobs:
 
     steps:
     # 2. Cek versi terbaru dari vernesong/dev
-    - name: Cek versi terbaru
-      id: check_version
-      run: |
-        # Ambil versi terbaru
-        LATEST_VER=$(curl -s https://raw.githubusercontent.com/vernesong/OpenClash/dev/luci-app-openclash/Makefile | grep -oP '(?<=PKG_VERSION:=)[0-9\.]+')
-        echo "LATEST_VER=$LATEST_VER" >> $GITHUB_ENV
-        echo "Versi terbaru: $LATEST_VER"
+    # Checkout repo build
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0   # untuk bisa commit last_version.txt
 
-        # Baca versi terakhir dari file di repo
-        if [ -f $GITHUB_WORKSPACE/last_version.txt ]; then
-          LAST_VER=$(cat $GITHUB_WORKSPACE/last_version.txt)
-          echo "Versi terakhir di repo: $LAST_VER"
-        else
-          LAST_VER=""
-        fi
+# Ambil versi terbaru
+    - run: |
+       LATEST_VER=$(curl -s https://raw.githubusercontent.com/vernesong/OpenClash/dev/luci-app-openclash/Makefile | grep -oP '(?<=PKG_VERSION:=)[0-9\.]+')
+       echo "$LATEST_VER"
 
-        # Bandingkan versi
-        if [ "$LAST_VER" = "$LATEST_VER" ]; then
-          echo "Versi sama ($LATEST_VER), skip build."
-          echo "SKIP_BUILD=true" >> $GITHUB_ENV
-        else
-          echo "$LATEST_VER" > $GITHUB_WORKSPACE/last_version.txt
-          echo "SKIP_BUILD=false" >> $GITHUB_ENV
-        fi
+# Baca versi terakhir dari repo build
+    - run: |
+       if [ -f last_version.txt ]; then
+       LAST_VER=$(cat last_version.txt)
+       else
+       LAST_VER=""
+       fi
 
-    # 3. Commit update last_version.txt ke repo (jika versi baru)
-    - name: Commit last_version.txt
-      if: env.SKIP_BUILD == 'false'
-      run: |
-        git config user.name "github-actions"
-        git config user.email "actions@github.com"
-        git add last_version.txt
-        git commit -m "Update last_version.txt ke $LATEST_VER"
-        git push
+# Bandingkan versi
+    - run: |
+       if [ "$LAST_VER" != "$LATEST_VER" ]; then
+       echo "$LATEST_VER" > last_version.txt
+       git config user.name "github-actions"
+       git config user.email "actions@github.com"
+       git add last_version.txt
+       git commit -m "Update last_version.txt ke $LATEST_VER"
+       git push
+       else
+       echo "Versi sama, skip build"
+       fi
 
     # 4. Checkout repo target
     - name: Checkout repo
