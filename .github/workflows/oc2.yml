@@ -134,7 +134,7 @@ jobs:
           ## OpenClash v${{ env.LATEST_VER }}
           **Changelog:**
           - Update versi terbaru dari vernesong/dev
-          - https://github.com/vernesong/OpenClash/commits/dev/
+          - Full Changelog:https://github.com/vernesong/OpenClash/commits/dev/
           - Build IPK & APK
           - Minor bug fixes
         files: release/*
