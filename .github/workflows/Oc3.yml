@@ -159,5 +159,5 @@ jobs:
             - Build IPK & APK
           files: release/*
           draft: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
+        env:
+           GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
