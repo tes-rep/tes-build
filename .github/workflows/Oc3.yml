@@ -136,13 +136,7 @@ jobs:
           mkdir -p $GITHUB_WORKSPACE/release
           find bin/ -type f -name "luci-app-openclash*.apk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk \;
 
-      # ----------------- Validasi -----------------
-      - name: Validasi hasil build
-        run: |
-          if ! ls $GITHUB_WORKSPACE/release/* 1> /dev/null 2>&1; then
-            echo "Build gagal: tidak ada file release."
-            exit 1
-          fi
+      
 
       # ----------------- Upload Release -----------------
       - name: Upload ke Release
@@ -158,6 +152,6 @@ jobs:
             - **Full Changelog**: https://github.com/vernesong/OpenClash/commits/dev/
             - Build IPK & APK
           files: release/*
-          draft: true
+          prerelease: true
         env:
            GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
