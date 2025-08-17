@@ -46,22 +46,20 @@ jobs:
       
       - name: Notif Telegram versi terbaru
         run: |
-          if [[ "${{ steps.setvar.outputs.skip_build }}" == "true" ]]; then
-          STATUS="ℹ️ Tidak ada versi baru"
-          VER="v${{ steps.setvar.outputs.latest_ver }}"
-          MSG="$STATUS\nVersi terakhir tetap: $VER\n\n🔗 *Release:* [link](https://github.com/tes-rep/OpenClash/releases/tag/$VER)\n🔗 *IPK:* [link](https://github.com/tes-rep/OpenClash/releases/download/$VER/luci-app-openclash_${VER}_all.ipk)\n🔗 *APK:* [link](https://github.com/tes-rep/OpenClash/releases/download/$VER/luci-app-openclash-${VER}.apk)"
-            else
-          STATUS="🔔 Versi baru tersedia"
-          VER="v${{ steps.setvar.outputs.latest_ver }}"
-          MSG="$STATUS: $VER\n\n🔗 *Release:* [link](https://github.com/tes-rep/OpenClash/releases/tag/$VER)\n🔗 *IPK:* [link](https://github.com/tes-rep/OpenClash/releases/download/$VER/luci-app-openclash_${VER}_all.ipk)\n🔗 *APK:* [link](https://github.com/tes-rep/OpenClash/releases/download/$VER/luci-app-openclash-${VER}.apk)"
-            fi
+         if [[ "${{ steps.setvar.outputs.skip_build }}" == "true" ]]; then
+         STATUS="ℹ️ <b>Tidak ada versi baru</b>"
+         VER="v${{ steps.setvar.outputs.latest_ver }}"
+         MSG="$STATUS<br>Versi terakhir tetap: <b>$VER</b><br><br>━━━━━━━━━━━━━━━<br>🔗 <b>Release:</b> <a href=\"https://github.com/tes-rep/OpenClash/releases/tag/$VER\">klik di sini</a><br>📦 <b>IPK:</b> <a href=\"https://github.com/tes-rep/OpenClash/releases/download/$VER/luci-app-openclash_${VER}_all.ipk\">download</a><br>📱 <b>APK:</b> <a href=\"https://github.com/tes-rep/OpenClash/releases/download/$VER/luci-app-openclash-${VER}.apk\">download</a>"
+          else
+         STATUS="🔔 <b>Versi baru tersedia</b>"
+         VER="v${{ steps.setvar.outputs.latest_ver }}"
+         MSG="$STATUS: <b>$VER</b><br><br>━━━━━━━━━━━━━━━<br>🔗 <b>Release:</b> <a href=\"https://github.com/tes-rep/OpenClash/releases/tag/$VER\">klik di sini</a><br>📦 <b>IPK:</b> <a href=\"https://github.com/tes-rep/OpenClash/releases/download/$VER/luci-app-openclash_${VER}_all.ipk\">download</a><br>📱 <b>APK:</b> <a href=\"https://github.com/tes-rep/OpenClash/releases/download/$VER/luci-app-openclash-${VER}.apk\">download</a>"
+          fi
 
-          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-            -d text="$MSG" \
-            -d parse_mode="MarkdownV2"
-
-
+         curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+           -d text="$MSG" \
+           -d parse_mode="HTML"
 
   build:
     needs: check-version
