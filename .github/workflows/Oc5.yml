@@ -1,4 +1,4 @@
-name: Build luci-app-openclash ke tes-rep5
+name: Build luci-app-openclash ke tes-rep4
 
 on:
   workflow_dispatch:
@@ -18,13 +18,19 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 1
 
-      - id: setvar
+      - name: Cek versi terbaru
+        id: setvar
         run: |
-          LATEST_VER=$(curl -s https://raw.githubusercontent.com/vernesong/OpenClash/dev/luci-app-openclash/Makefile \
-            | grep -oP '(?<=PKG_VERSION:=)[0-9\.]+')
+          LATEST_VER=$(curl -s https://raw.githubusercontent.com/vernesong/OpenClash/dev/luci-app-openclash/Makefile | grep -oP '(?<=PKG_VERSION:=)[0-9\.]+')
           echo "latest_ver=$LATEST_VER" >> $GITHUB_OUTPUT
+          echo "Versi terbaru: $LATEST_VER"
 
-          LAST_VER=$(cat last_version.txt 2>/dev/null || echo "")
+          if [ -f last_version.txt ]; then
+            LAST_VER=$(cat last_version.txt)
+          else
+            LAST_VER=""
+          fi
+
           if [ "$LAST_VER" = "$LATEST_VER" ]; then
             echo "skip_build=true" >> $GITHUB_OUTPUT
           else
@@ -32,23 +38,46 @@ jobs:
             git config user.name "github-actions"
             git config user.email "actions@github.com"
             git add last_version.txt
-            git commit -m "Update last_version.txt ke $LATEST_VER" || true
-            git pull --rebase || true
-            git push || true
+            git commit -m "Update last_version.txt ke $LATEST_VER" --quiet || true
+            git pull --rebase --quiet || true
+            git push --quiet || true
             echo "skip_build=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Notif Telegram versi terbaru
         run: |
-          STATUS=$([[ "${{ steps.setvar.outputs.skip_build }}" == "true" ]] && echo "tidak ada versi baru" || echo "versi baru tersedia")
-          VERSION=${{ steps.setvar.outputs.latest_ver }}
-          RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/v$VERSION"
-          IPK_URL="$RELEASE_URL/download/luci-app-openclash_${VERSION}_all.ipk"
-          APK_URL="$RELEASE_URL/download/luci-app-openclash-${VERSION}.apk"
-          MSG="ℹ️ $STATUS: v$VERSION\n🔗 Unduh IPK: $IPK_URL\n🔗 Unduh APK: $APK_URL"
-          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-            -d text="$MSG"
+          VER="v${{ steps.setvar.outputs.latest_ver }}"
+          BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
+          RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/$VER"
+
+          # Ambil versi lama
+          if [ -f last_version.txt ]; then
+            OLD_VER=$(cat last_version.txt)
+          else
+            OLD_VER="tidak tersedia"
+          fi
+
+          if [[ "${{ steps.setvar.outputs.skip_build }}" == "true" ]]; then
+          # Versi sama dengan terakhir
+          STATUS="ℹ️ <b>Tidak ada versi baru</b>"
+          HEADER="Versi terakhir: <b>$VER</b>"
+          MSG=$(printf "%s\n%s\n\n━━━━━━━━━━━━━━━\n🔗 <b>Release:</b> <a href=\"%s\">Klik di sini</a>\n📦 <b>IPK:</b> <a href=\"%s/luci-app-openclash_%s_all.ipk\">Download</a>\n📱 <b>APK:</b> <a href=\"%s/luci-app-openclash-%s.apk\">Download</a>" \
+            "$STATUS" \
+            "$HEADER" \
+            "$RELEASE_URL" \
+            "$BASE_URL" "$VER" \
+            "$BASE_URL" "$VER")
+         else
+         # Versi baru terdeteksi, build sedang berlangsung
+         STATUS="🔔 <b>Versi baru tersedia</b>"
+         MSG="$STATUS\n📌 Pre-release build sedang berlangsung"
+         fi
+
+         curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+           -d text="$MSG" \
+           -d parse_mode="HTML"
+
 
   build:
     needs: check-version
@@ -70,29 +99,27 @@ jobs:
           repository: tes-rep/OpenClash
           token: ${{ secrets.TARGET_REPO_PAT3 }}
 
-      - name: Setup SDK
-        run: |
-          SDK_DIR=$GITHUB_WORKSPACE/SDK
-          if [[ ! -d "$SDK_DIR" ]]; then
-            if [[ "${{ matrix.target }}" == "ipk" ]]; then
-              mkdir -p /tmp/sdk_old
-              curl -SLk "https://archive.openwrt.org/chaos_calmer/15.05.1/ar71xx/generic/OpenWrt-SDK-15.05.1-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-x86_64.tar.bz2" -o /tmp/SDK.tar.bz2
-              tar -xjf /tmp/SDK.tar.bz2 -C /tmp/sdk_old
-              mv /tmp/sdk_old/OpenWrt-SDK-* $SDK_DIR
-            else
-              mkdir -p /tmp/sdk_snap
-              BASE_URL="https://downloads.openwrt.org/snapshots/targets/x86/64"
-              SDK_NAME=$(curl -s $BASE_URL/ | grep -oE 'openwrt-sdk-x86-64[^"]+\.tar\.zst' | head -n1)
-              curl -SLk "$BASE_URL/$SDK_NAME" -o /tmp/SNAPSDK.tar.zst
-              tar --zstd -xf /tmp/SNAPSDK.tar.zst -C /tmp/sdk_snap
-              mv /tmp/sdk_snap/openwrt-sdk-* $SDK_DIR
-            fi
-          fi
-          echo "SDK_DIR=$SDK_DIR" >> $GITHUB_ENV
+      # ----------------- IPK Build -----------------
+      - name: Cache SDK lama
+        if: matrix.target == 'ipk'
+        id: cache_ipk
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/SDK
+          key: sdk-old-${{ needs.check-version.outputs.latest_ver }}
 
-      - name: Clone luci-app-openclash
+      - name: Download & Ekstrak SDK 15.05.1
+        if: matrix.target == 'ipk' && steps.cache_ipk.outputs.cache-hit != 'true'
         run: |
-          cd $SDK_DIR/package
+          mkdir -p /tmp/sdk_old
+          curl -SLk --retry 3 "https://archive.openwrt.org/chaos_calmer/15.05.1/ar71xx/generic/OpenWrt-SDK-15.05.1-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-x86_64.tar.bz2" -o /tmp/SDK.tar.bz2
+          tar -xjf /tmp/SDK.tar.bz2 -C /tmp/sdk_old
+          mv /tmp/sdk_old/OpenWrt-SDK-* $GITHUB_WORKSPACE/SDK
+
+      - name: Clone luci-app-openclash IPK
+        if: matrix.target == 'ipk'
+        run: |
+          cd $GITHUB_WORKSPACE/SDK/package
           if [ -d "luci-app-openclash" ]; then
             cd luci-app-openclash
             git fetch --depth 1 origin dev
@@ -100,76 +127,122 @@ jobs:
           else
             git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
             cd luci-app-openclash && git sparse-checkout set luci-app-openclash
-        continue-on-error: true
+          fi
 
-      - name: Notif Telegram Clone Gagal
-        if: failure()
+      - name: Compile po2lmo (IPK)
+        if: matrix.target == 'ipk'
         run: |
-          MSG="❌ Clone luci-app-openclash gagal!\nVersi: ${{ needs.check-version.outputs.latest_ver }}"
-          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -d text="$MSG"
-
-      - name: Compile po2lmo
-        run: |
-          cd $SDK_DIR/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
+          cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
           make && sudo make install
-        continue-on-error: true
 
-      - name: Notif Telegram Compile po2lmo Gagal
-        if: failure()
+      - name: Compile luci-app-openclash (IPK)
+        if: matrix.target == 'ipk'
         run: |
-          MSG="❌ Compile po2lmo gagal!\nVersi: ${{ needs.check-version.outputs.latest_ver }}"
-          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -d text="$MSG"
-
-      - name: Compile luci-app-openclash
-        run: |
-          cd $SDK_DIR
-          [[ "${{ matrix.target }}" == "apk" ]] && make defconfig
+          cd $GITHUB_WORKSPACE/SDK
           make package/luci-app-openclash/luci-app-openclash/compile V=99
           mkdir -p $GITHUB_WORKSPACE/release
-          if [[ "${{ matrix.target }}" == "ipk" ]]; then
-            find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all.ipk \;
-          else
-            find bin/ -type f -name "luci-app-openclash*.apk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk \;
-        continue-on-error: true
+          find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all.ipk \;
 
-      - name: Notif Telegram Compile luci-app-openclash Gagal
-        if: failure()
+      # ----------------- APK Build -----------------
+      - name: Cache SDK snapshot
+        if: matrix.target == 'apk'
+        id: cache_apk
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/SNAPSDK
+          key: sdk-snap-${{ needs.check-version.outputs.latest_ver }}
+
+      - name: Download & Ekstrak SDK Snapshot
+        if: matrix.target == 'apk' && steps.cache_apk.outputs.cache-hit != 'true'
         run: |
-          MSG="❌ Compile luci-app-openclash gagal!\nVersi: ${{ needs.check-version.outputs.latest_ver }}"
-          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -d text="$MSG"
+          mkdir -p /tmp/sdk_snap
+          BASE_URL="https://downloads.openwrt.org/snapshots/targets/x86/64"
+          SDK_NAME=$(curl -s $BASE_URL/ | grep -oE 'openwrt-sdk-x86-64[^"]+\.tar\.zst' | head -n 1)
+          curl -SLk "$BASE_URL/$SDK_NAME" -o /tmp/SNAPSDK.tar.zst
+          tar --zstd -xf /tmp/SNAPSDK.tar.zst -C /tmp/sdk_snap
+          mv /tmp/sdk_snap/openwrt-sdk-* $GITHUB_WORKSPACE/SNAPSDK
 
+      - name: Clone luci-app-openclash (APK)
+        if: matrix.target == 'apk'
+        run: |
+          cd $GITHUB_WORKSPACE/SNAPSDK/package
+          if [ -d "luci-app-openclash" ]; then
+            cd luci-app-openclash
+            git fetch --depth 1 origin dev
+            git reset --hard origin/dev
+          else
+            git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
+            cd luci-app-openclash && git sparse-checkout set luci-app-openclash
+          fi
+
+      - name: Compile po2lmo (APK)
+        if: matrix.target == 'apk'
+        run: |
+          cd $GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
+          make && sudo make install
+
+      - name: Compile luci-app-openclash (APK)
+        if: matrix.target == 'apk'
+        run: |
+          cd $GITHUB_WORKSPACE/SNAPSDK
+          make defconfig
+          make package/luci-app-openclash/luci-app-openclash/compile V=99
+          mkdir -p $GITHUB_WORKSPACE/release
+          find bin/ -type f -name "luci-app-openclash*.apk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk \;
+
+      # ----------------- Upload Release -----------------
       - name: Upload ke Release
+        id: upload_release
         uses: softprops/action-gh-release@v1
         with:
           repository: tes-rep/OpenClash
           tag_name: v${{ needs.check-version.outputs.latest_ver }}
           name: "v${{ needs.check-version.outputs.latest_ver }}"
+          body: |
+            ## OpenClash v${{ needs.check-version.outputs.latest_ver }}
+            **Changelog:**
+            - Update versi terbaru dari vernesong/dev
+            - **Full Changelog**: https://github.com/vernesong/OpenClash/commits/dev/
+            - Build IPK & APK
           files: release/*
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
-        continue-on-error: true
 
-      - name: Notif Telegram Upload Gagal
-        if: failure()
-        run: |
-          MSG="❌ Upload Release gagal!\nVersi: ${{ needs.check-version.outputs.latest_ver }}"
-          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -d text="$MSG"
-
-      - name: Notif Telegram Sukses
+      # ----------------- Telegram Notif -----------------
+      
+      - name: Notif Telegram Build Selesai
         if: success()
         run: |
           BUILD_END=$(date +%s)
           DURATION=$((BUILD_END - BUILD_START))
           MIN=$((DURATION / 60))
           SEC=$((DURATION % 60))
-          RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/v${{ needs.check-version.outputs.latest_ver }}"
-          IPK_URL="$RELEASE_URL/download/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all.ipk"
-          APK_URL="$RELEASE_URL/download/luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk"
-          MSG="✅ Build v${{ needs.check-version.outputs.latest_ver }} sukses!\n🕒 Start: ${BUILD_START_HUMAN}\n⏱ Durasi: ${MIN}m ${SEC}s\n🔗 Release: $RELEASE_URL\n🔗 IPK: $IPK_URL\n🔗 APK: $APK_URL"
+
+          VER="${{ needs.check-version.outputs.latest_ver }}"
+          RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/v$VER"
+          BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
+
+          # Ambil versi lama
+          if [ -f last_version.txt ]; then
+            OLD_VER=$(cat last_version.txt)
+          else
+          OLD_VER="tidak tersedia"
+          fi
+
+          IPK_FILE="luci-app-openclash_${VER}_all.ipk"
+          APK_FILE="luci-app-openclash-${VER}.apk"
+
+          MSG=$(printf "✅ <b>Build OpenClash Selesai!</b>\n\n<b>Versi baru:</b> %s\n<b>Versi lama:</b> %s\n\n🕒 <b>Start:</b> %s\n⏱ <b>Durasi:</b> %dm %ds\n\n📦 <a href=\"%s/%s\">IPK Download</a>\n📱 <a href=\"%s/%s\">APK Download</a>\n🔗 <a href=\"%s\">Release</a>" \
+            "$VER" \
+            "$OLD_VER" \
+            "$BUILD_START_HUMAN" \
+            "$MIN" "$SEC" \
+            "$BASE_URL" "$IPK_FILE" \
+            "$BASE_URL" "$APK_FILE" \
+            "$RELEASE_URL")
+
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -d text="$MSG"
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="$MSG" \
+            -d parse_mode="HTML"
