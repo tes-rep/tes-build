@@ -144,7 +144,7 @@ jobs:
       - name: Clone luci-app-openclash (APK)
         if: matrix.target == 'apk'
         run: |
-          cd $GITHUB_WORKSPACE/SDK/package
+          cd $GITHUB_WORKSPACE/SNAPSDK/package
           if [ -d "luci-app-openclash" ]; then
             cd luci-app-openclash
             git fetch --depth 1 origin dev
