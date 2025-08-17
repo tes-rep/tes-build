@@ -209,8 +209,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
 
       # ----------------- Telegram Notif -----------------
-      - name: Notif Telegram Sukses (HTML)
-        if: success()
+      
+      - name: Notif Telegram Build Status Per Target
         run: |
           BUILD_END=$(date +%s)
           DURATION=$((BUILD_END - BUILD_START))
@@ -218,20 +218,47 @@ jobs:
           SEC=$((DURATION % 60))
 
           VER="${{ needs.check-version.outputs.latest_ver }}"
+    
+          # Ambil versi lama
+          if [ -f last_version.txt ]; then
+          OLD_VER=$(cat last_version.txt)
+          else
+          OLD_VER=""
+          fi
+
           RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/v$VER"
+
+          # Cek file hasil build
           IPK_FILE="luci-app-openclash_${VER}_all.ipk"
           APK_FILE="luci-app-openclash-${VER}.apk"
-          IPK_URL="$RELEASE_URL/download/$IPK_FILE"
-          APK_URL="$RELEASE_URL/download/$APK_FILE"
+          IPK_PATH="$GITHUB_WORKSPACE/release/$IPK_FILE"
+          APK_PATH="$GITHUB_WORKSPACE/release/$APK_FILE"
 
-          MSG=$(printf "✅ <b>Build v%s Sukses!</b>\n\n🕒 <b>Start:</b> %s\n⏱ <b>Durasi:</b> %dm %ds\n\n🔗 <b>Release:</b> <a href=\"%s\">Klik di sini</a>\n📦 <b>IPK:</b> <a href=\"%s\">Download</a>\n📱 <b>APK:</b> <a href=\"%s\">Download</a>" \
+          if [ -f "$IPK_PATH" ]; then
+          IPK_STATUS="✅"
+          IPK_URL="$RELEASE_URL/download/$IPK_FILE"
+          else
+          IPK_STATUS="❌"
+          IPK_URL="#"
+          fi
+
+          if [ -f "$APK_PATH" ]; then
+          APK_STATUS="✅"
+          APK_URL="$RELEASE_URL/download/$APK_FILE"
+          else
+          APK_STATUS="❌"
+          APK_URL="#"
+          fi
+
+          MSG=$(printf "🔔 <b>Build OpenClash Status</b>\n\n<b>Versi baru:</b> %s\n[Versi sebelumnya: <b>%s</b>]\n\n🕒 <b>Start:</b> %s\n⏱ <b>Durasi:</b> %dm %ds\n\n📦 IPK: %s <a href=\"%s\">%s</a>\n📱 APK: %s <a href=\"%s\">%s</a>\n🔗 <b>Release:</b> <a href=\"%s\">Klik di sini</a>" \
           "$VER" \
+          "$OLD_VER" \
           "$BUILD_START_HUMAN" \
           "$MIN" "$SEC" \
-          "$RELEASE_URL" \
-          "$IPK_URL" \
-          "$APK_URL")
-     
+          "$IPK_STATUS" "$IPK_URL" "$IPK_FILE" \
+          "$APK_STATUS" "$APK_URL" "$APK_FILE" \
+          "$RELEASE_URL")
+
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
             -d text="$MSG" \
