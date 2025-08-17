@@ -233,7 +233,7 @@ jobs:
           IPK_FILE="luci-app-openclash_${VER}_all.ipk"
           APK_FILE="luci-app-openclash-${VER}.apk"
 
-          MSG=$(printf "✅ Build OpenClash Selesai!<br>━━━━━━━━━━━━━━━<br>Versi baru: %s<br>Versi lama: %s<br>━━━━━━━━━━━━━━━<br>🕒 Start: %s<br>⏱ Durasi: %dm %ds<br>━━━━━━━━━━━━━━━<br>🔗 Release: <a href=\"%s\">Klik di sini</a><br>📦 IPK: <a href=\"%s/%s\">Download</a><br>📱 APK: <a href=\"%s/%s\">Download</a>" \
+          MSG=$(printf "✅ Build OpenClash Selesai!\n━━━━━━━━━━━━━━━\nVersi baru: %s\nVersi lama: %s\n━━━━━━━━━━━━━━━\n🕒 Start: %s\n⏱ Durasi: %dm %ds\n━━━━━━━━━━━━━━━\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/%s\">Download</a>\n📱 APK: <a href=\"%s/%s\">Download</a>" \
             "$VER" \
             "$OLD_VER" \
             "$BUILD_START_HUMAN" \
