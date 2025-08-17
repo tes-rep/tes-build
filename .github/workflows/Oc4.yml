@@ -44,6 +44,13 @@ jobs:
             echo "skip_build=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Notif jika tidak ada versi baru
+        if: steps.setvar.outputs.skip_build == 'true'
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="ℹ️ Tidak ada versi baru luci-app-openclash. Versi terakhir tetap v${{ steps.setvar.outputs.latest_ver }}"
+
   build:
     needs: check-version
     if: needs.check-version.outputs.skip_build == 'false'
