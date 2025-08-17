@@ -64,7 +64,7 @@ jobs:
           IPK_URL="$RELEASE_URL/download/$IPK_FILE"
           APK_URL="$RELEASE_URL/download/$APK_FILE"
 
-          MSG="✅ *Build v${{ needs.check-version.outputs.latest_ver }} Sukses!*\n"
+          MSG="✅ *v${{ needs.check-version.outputs.latest_ver }} jika tidak ada versi baru!*\n"
           MSG+="🕒 Start: ${BUILD_START_HUMAN}\n"
           MSG+="⏱ Durasi: ${MIN}m ${SEC}s\n"
           MSG+="🔗 [Release]($RELEASE_URL)\n"
