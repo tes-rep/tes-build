@@ -70,7 +70,7 @@ jobs:
           else
           # Versi baru terdeteksi, build sedang berlangsung
           STATUS="🔔 <b>Versi baru tersedia</b>"
-          MSG="$STATUS\n📌 Pre-release build sedang berlangsung"
+          MSG="$STATUS<br>📌 Pre-release build sedang berlangsung"
           fi
 
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
@@ -233,7 +233,7 @@ jobs:
           IPK_FILE="luci-app-openclash_${VER}_all.ipk"
           APK_FILE="luci-app-openclash-${VER}.apk"
 
-          MSG=$(printf "✅ <b>Build OpenClash Selesai!</b>\n\n<b>Versi baru:</b> %s\n<b>Versi lama:</b> %s\n\n🕒 <b>Start:</b> %s\n⏱ <b>Durasi:</b> %dm %ds\n\n📦 <a href=\"%s/%s\">IPK Download</a>\n📱 <a href=\"%s/%s\">APK Download</a>\n🔗 <a href=\"%s\">Release</a>" \
+          MSG=$(printf "✅ Build OpenClash Selesai!<br>━━━━━━━━━━━━━━━<br>Versi baru: %s<br>Versi lama: %s<br>━━━━━━━━━━━━━━━<br>🕒 Start: %s<br>⏱ Durasi: %dm %ds<br>━━━━━━━━━━━━━━━<br>🔗 Release: <a href=\"%s\">Klik di sini</a><br>📦 IPK: <a href=\"%s/%s\">Download</a><br>📱 APK: <a href=\"%s/%s\">Download</a>" \
             "$VER" \
             "$OLD_VER" \
             "$BUILD_START_HUMAN" \
