@@ -43,22 +43,24 @@ jobs:
             git push || true
             echo "skip_build=false" >> $GITHUB_OUTPUT
           fi
+      
       - name: Notif Telegram versi terbaru
         run: |
           if [[ "${{ steps.setvar.outputs.skip_build }}" == "true" ]]; then
           STATUS="ℹ️ Tidak ada versi baru"
           VER="v${{ steps.setvar.outputs.latest_ver }}"
-          MSG="$STATUS\nVersi terakhir tetap: $VER\n🔗 Release: https://github.com/tes-rep/OpenClash/releases/tag/$VER\n🔗 IPK: https://github.com/tes-rep/OpenClash/releases/download/$VER/luci-app-openclash_${VER}_all.ipk\n🔗 APK: https://github.com/tes-rep/OpenClash/releases/download/$VER/luci-app-openclash-${VER}.apk"
-             else
+          MSG="$STATUS\nVersi terakhir tetap: $VER\n\n🔗 *Release:* [link](https://github.com/tes-rep/OpenClash/releases/tag/$VER)\n🔗 *IPK:* [link](https://github.com/tes-rep/OpenClash/releases/download/$VER/luci-app-openclash_${VER}_all.ipk)\n🔗 *APK:* [link](https://github.com/tes-rep/OpenClash/releases/download/$VER/luci-app-openclash-${VER}.apk)"
+            else
           STATUS="🔔 Versi baru tersedia"
           VER="v${{ steps.setvar.outputs.latest_ver }}"
-          MSG="$STATUS: $VER\n🔗 Release: https://github.com/tes-rep/OpenClash/releases/tag/$VER\n🔗 IPK: https://github.com/tes-rep/OpenClash/releases/download/$VER/luci-app-openclash_${VER}_all.ipk\n🔗 APK: https://github.com/tes-rep/OpenClash/releases/download/$VER/luci-app-openclash-${VER}.apk"
-          fi
+          MSG="$STATUS: $VER\n\n🔗 *Release:* [link](https://github.com/tes-rep/OpenClash/releases/tag/$VER)\n🔗 *IPK:* [link](https://github.com/tes-rep/OpenClash/releases/download/$VER/luci-app-openclash_${VER}_all.ipk)\n🔗 *APK:* [link](https://github.com/tes-rep/OpenClash/releases/download/$VER/luci-app-openclash-${VER}.apk)"
+            fi
 
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
             -d text="$MSG" \
-            -d parse_mode="Markdown"
+            -d parse_mode="MarkdownV2"
+
 
 
   build:
