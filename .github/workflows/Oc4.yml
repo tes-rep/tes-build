@@ -56,7 +56,7 @@ jobs:
         run: |
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-            -d text="ℹ️ Tidak ada versi baru luci-app-openclash. Versi terakhir tetap v${{ steps.setvar.outputs.latest_ver }}"
+            -d text="ℹ️ Tidak ada versi baru luci-app-openclash. Versi terakhir tetap v${{ steps.setvar.outputs.latest_ver }} link: ${RELEASE_URL}"
 
   build:
     needs: check-version
@@ -67,6 +67,11 @@ jobs:
         target: [ipk, apk]
 
     steps:
+      - name: Catat waktu mulai
+        run: |
+          echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
+          echo "BUILD_START_HUMAN=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_ENV
+          
       - name: Checkout repo release
         uses: actions/checkout@v4
         with:
