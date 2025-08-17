@@ -12,7 +12,8 @@ jobs:
       skip_build: ${{ steps.setvar.outputs.skip_build }}
       latest_ver: ${{ steps.setvar.outputs.latest_ver }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo build
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 1
@@ -42,10 +43,12 @@ jobs:
           STATUS=$([[ "${{ steps.setvar.outputs.skip_build }}" == "true" ]] && echo "tidak ada versi baru" || echo "versi baru tersedia")
           VERSION=${{ steps.setvar.outputs.latest_ver }}
           RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/v$VERSION"
-          MSG="ℹ️ $STATUS: v$VERSION\n🔗 Unduh: $RELEASE_URL"
+          IPK_URL="$RELEASE_URL/download/luci-app-openclash_${VERSION}_all.ipk"
+          APK_URL="$RELEASE_URL/download/luci-app-openclash-${VERSION}.apk"
+          MSG="ℹ️ $STATUS: v$VERSION\n🔗 Unduh IPK: $IPK_URL\n🔗 Unduh APK: $APK_URL"
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -d text="$MSG"
-
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="$MSG"
 
   build:
     needs: check-version
@@ -165,6 +168,8 @@ jobs:
           MIN=$((DURATION / 60))
           SEC=$((DURATION % 60))
           RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/v${{ needs.check-version.outputs.latest_ver }}"
-          MSG="✅ Build v${{ needs.check-version.outputs.latest_ver }} sukses!\n🕒 Start: ${BUILD_START_HUMAN}\n⏱ Durasi: ${MIN}m ${SEC}s\n🔗 Release: ${RELEASE_URL}"
+          IPK_URL="$RELEASE_URL/download/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all.ipk"
+          APK_URL="$RELEASE_URL/download/luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk"
+          MSG="✅ Build v${{ needs.check-version.outputs.latest_ver }} sukses!\n🕒 Start: ${BUILD_START_HUMAN}\n⏱ Durasi: ${MIN}m ${SEC}s\n🔗 Release: $RELEASE_URL\n🔗 IPK: $IPK_URL\n🔗 APK: $APK_URL"
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -d text="$MSG"
