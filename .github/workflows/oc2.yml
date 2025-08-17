@@ -145,10 +145,11 @@ jobs:
     - name: Send Telegram Notification
       if: always()   # dijalankan walaupun build sukses/gagal
       run: |
-       STATUS="${{ job.status }}"
-       MESSAGE="📦 Build Status: ${STATUS}%0A🏷️ Repo: ${{ github.repository }}%0A🔗 Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-       curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-        -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-        -d text="$MESSAGE" \
-        -d parse_mode="HTML"
+        STATUS="${{ job.status }}"
+        MESSAGE="📦 Build Status: ${STATUS}%0A🏷️ Repo: ${{ github.repository }}%0A🔗 Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+       
+        curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d text="$MESSAGE" \
+          -d parse_mode="HTML"
    
