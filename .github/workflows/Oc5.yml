@@ -40,9 +40,12 @@ jobs:
       - name: Notif Telegram versi terbaru
         run: |
           STATUS=$([[ "${{ steps.setvar.outputs.skip_build }}" == "true" ]] && echo "tidak ada versi baru" || echo "versi baru tersedia")
-          MSG="ℹ️ $STATUS: v${{ steps.setvar.outputs.latest_ver }}"
+          VERSION=${{ steps.setvar.outputs.latest_ver }}
+          RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/v$VERSION"
+          MSG="ℹ️ $STATUS: v$VERSION\n🔗 Unduh: $RELEASE_URL"
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -d text="$MSG"
+
 
   build:
     needs: check-version
