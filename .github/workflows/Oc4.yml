@@ -188,18 +188,35 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
 
       # ----------------- Telegram Notif -----------------
-      - name: Notif Telegram (sukses)
+      - name: Notif Telegram Sukses
         if: success()
         run: |
           BUILD_END=$(date +%s)
           DURATION=$((BUILD_END - BUILD_START))
           MIN=$((DURATION / 60))
           SEC=$((DURATION % 60))
-          RELEASE_URL="${{ steps.create_release.outputs.url }}"
-          MSG="✅ Build v${{ needs.check-version.outputs.latest_ver }} sukses!\n🕒 Start: ${BUILD_START_HUMAN}\n⏱ Durasi: ${MIN}m ${SEC}s\n🔗 Release: ${RELEASE_URL}"
+          RELEASE_URL="${{ steps.upload_release.outputs.url }}"
+
+          # Nama file release sesuai versi
+          IPK_FILE="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all.ipk"
+          APK_FILE="luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk"
+
+          # URL file
+          IPK_URL="$RELEASE_URL/download/$IPK_FILE"
+          APK_URL="$RELEASE_URL/download/$APK_FILE"
+
+          MSG="✅ *Build v${{ needs.check-version.outputs.latest_ver }} Sukses!*\n"
+          MSG+="🕒 Start: ${BUILD_START_HUMAN}\n"
+          MSG+="⏱ Durasi: ${MIN}m ${SEC}s\n"
+          MSG+="🔗 [Release]($RELEASE_URL)\n"
+          MSG+="🔗 [IPK]($IPK_URL)\n"
+          MSG+="🔗 [APK]($APK_URL)"
+
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-            -d text="$MSG"
+            -d text="$MSG" \
+            -d parse_mode="Markdown"
+
 
       - name: Notif Telegram (gagal)
         if: failure()
