@@ -1,0 +1,162 @@
+name: Build luci-app-openclash ke tes-rep4
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      skip_build: ${{ steps.setvar.outputs.skip_build }}
+      latest_ver: ${{ steps.setvar.outputs.latest_ver }}
+    steps:
+      - name: Checkout repo build
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - name: Cek versi terbaru
+        id: setvar
+        run: |
+          LATEST_VER=$(curl -s https://raw.githubusercontent.com/vernesong/OpenClash/dev/luci-app-openclash/Makefile | grep -oP '(?<=PKG_VERSION:=)[0-9\.]+')
+          echo "latest_ver=$LATEST_VER" >> $GITHUB_OUTPUT
+          echo "Versi terbaru: $LATEST_VER"
+
+          if [ -f last_version.txt ]; then
+            LAST_VER=$(cat last_version.txt)
+          else
+            LAST_VER=""
+          fi
+
+          if [ "$LAST_VER" = "$LATEST_VER" ]; then
+            echo "skip_build=true" >> $GITHUB_OUTPUT
+          else
+            echo "$LATEST_VER" > last_version.txt
+            git config user.name "github-actions"
+            git config user.email "actions@github.com"
+            git add last_version.txt
+            git commit -m "Update last_version.txt ke $LATEST_VER" || true
+            git pull --rebase || true
+            git push || true
+            echo "skip_build=false" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    needs: check-version
+    if: needs.check-version.outputs.skip_build == 'false'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [ipk, apk]
+
+    steps:
+      - name: Checkout repo release
+        uses: actions/checkout@v4
+        with:
+          repository: tes-rep/OpenClash
+          token: ${{ secrets.TARGET_REPO_PAT3 }}
+
+      # ----------------- IPK Build -----------------
+      - name: Cache SDK lama
+        if: matrix.target == 'ipk'
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/SDK
+          key: sdk-old-${{ needs.check-version.outputs.latest_ver }}
+
+      - name: Download & Ekstrak SDK 15.05.1
+        if: matrix.target == 'ipk' && steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /tmp/sdk_old
+          curl -SLk --retry 3 "https://archive.openwrt.org/chaos_calmer/15.05.1/ar71xx/generic/OpenWrt-SDK-15.05.1-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-x86_64.tar.bz2" -o /tmp/SDK.tar.bz2
+          tar -xjf /tmp/SDK.tar.bz2 -C /tmp/sdk_old
+          mv /tmp/sdk_old/OpenWrt-SDK-* $GITHUB_WORKSPACE/SDK
+
+      - name: Clone luci-app-openclash (IPK)
+        if: matrix.target == 'ipk'
+        run: |
+          cd $GITHUB_WORKSPACE/SDK/package
+          git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
+          cd luci-app-openclash && git sparse-checkout set luci-app-openclash
+
+      - name: Compile po2lmo (IPK)
+        if: matrix.target == 'ipk'
+        run: |
+          cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
+          make && sudo make install
+
+      - name: Compile luci-app-openclash (IPK)
+        if: matrix.target == 'ipk'
+        run: |
+          cd $GITHUB_WORKSPACE/SDK
+          make package/luci-app-openclash/luci-app-openclash/compile V=99
+          mkdir -p $GITHUB_WORKSPACE/release
+          find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all.ipk \;
+
+      # ----------------- APK Build -----------------
+      - name: Cache SDK snapshot
+        if: matrix.target == 'apk'
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/SNAPSDK
+          key: sdk-snap-${{ needs.check-version.outputs.latest_ver }}
+
+      - name: Download & Ekstrak SDK Snapshot
+        if: matrix.target == 'apk' && steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /tmp/sdk_snap
+          BASE_URL="https://downloads.openwrt.org/snapshots/targets/x86/64"
+          SDK_NAME=$(curl -s $BASE_URL/ | grep -oE 'openwrt-sdk-x86-64[^"]+\.tar\.zst' | head -n 1)
+          curl -SLk "$BASE_URL/$SDK_NAME" -o /tmp/SNAPSDK.tar.zst
+          tar --zstd -xf /tmp/SNAPSDK.tar.zst -C /tmp/sdk_snap
+          mv /tmp/sdk_snap/openwrt-sdk-* $GITHUB_WORKSPACE/SNAPSDK
+
+      - name: Clone luci-app-openclash (APK)
+        if: matrix.target == 'apk'
+        run: |
+          cd $GITHUB_WORKSPACE/SNAPSDK/package
+          git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
+          cd luci-app-openclash && git sparse-checkout set luci-app-openclash
+
+      - name: Compile po2lmo (APK)
+        if: matrix.target == 'apk'
+        run: |
+          cd $GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
+          make && sudo make install
+
+      - name: Compile luci-app-openclash (APK)
+        if: matrix.target == 'apk'
+        run: |
+          cd $GITHUB_WORKSPACE/SNAPSDK
+          make defconfig
+          make package/luci-app-openclash/luci-app-openclash/compile V=99
+          mkdir -p $GITHUB_WORKSPACE/release
+          find bin/ -type f -name "luci-app-openclash*.apk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk \;
+
+      # ----------------- Upload Release -----------------
+      - name: Upload ke Release
+        uses: softprops/action-gh-release@v1
+        with:
+          repository: tes-rep/OpenClash
+          tag_name: v${{ needs.check-version.outputs.latest_ver }}
+          name: "v${{ needs.check-version.outputs.latest_ver }}"
+          body: |
+            ## OpenClash v${{ needs.check-version.outputs.latest_ver }}
+            **Changelog:**
+            - Update versi terbaru dari vernesong/dev
+            - **Full Changelog**: https://github.com/vernesong/OpenClash/commits/dev/
+            - Build IPK & APK
+          files: release/*
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
+
+      # ----------------- Telegram Notif -----------------
+      - name: Kirim Notifikasi Telegram
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="✅ Build luci-app-openclash v${{ needs.check-version.outputs.latest_ver }} selesai pada $(date '+%Y-%m-%d %H:%M:%S')"
