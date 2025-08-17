@@ -169,8 +169,27 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
 
       # ----------------- Telegram Notif -----------------
-      - name: Kirim Notifikasi Telegram
+      - name: Notif Telegram (sukses)
+        if: success()
         run: |
+          BUILD_END=$(date +%s)
+          DURATION=$((BUILD_END - BUILD_START))
+          MIN=$((DURATION / 60))
+          SEC=$((DURATION % 60))
+          RELEASE_URL="${{ steps.create_release.outputs.url }}"
+          MSG="✅ Build v${{ needs.check-version.outputs.latest_ver }} sukses!\n🕒 Start: ${BUILD_START_HUMAN}\n⏱ Durasi: ${MIN}m ${SEC}s\n🔗 Release: ${RELEASE_URL}"
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-            -d text="✅ Build luci-app-openclash v${{ needs.check-version.outputs.latest_ver }} selesai pada $(date '+%Y-%m-%d %H:%M:%S')"
+            -d text="$MSG"
+
+      - name: Notif Telegram (gagal)
+        if: failure()
+        run: |
+          BUILD_END=$(date +%s)
+          DURATION=$((BUILD_END - BUILD_START))
+          MIN=$((DURATION / 60))
+          SEC=$((DURATION % 60))
+          MSG="❌ Build v${{ needs.check-version.outputs.latest_ver }} gagal.\n🕒 Start: ${BUILD_START_HUMAN}\n⏱ Durasi: ${MIN}m ${SEC}s\nℹ️ Cek GitHub Actions log."
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="$MSG"
