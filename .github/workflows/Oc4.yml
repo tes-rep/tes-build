@@ -95,12 +95,19 @@ jobs:
           tar -xjf /tmp/SDK.tar.bz2 -C /tmp/sdk_old
           mv /tmp/sdk_old/OpenWrt-SDK-* $GITHUB_WORKSPACE/SDK
 
-      - name: Clone luci-app-openclash (IPK)
+      - name: Clone luci-app-openclash IPK
         if: matrix.target == 'ipk'
         run: |
           cd $GITHUB_WORKSPACE/SDK/package
-          git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
-          cd luci-app-openclash && git sparse-checkout set luci-app-openclash
+          if [ -d "luci-app-openclash" ]; then
+            cd luci-app-openclash
+            git fetch --depth 1 origin dev
+            git reset --hard origin/dev
+          else
+            git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
+            cd luci-app-openclash && git sparse-checkout set luci-app-openclash
+          fi
+
 
       - name: Compile po2lmo (IPK)
         if: matrix.target == 'ipk'
@@ -137,9 +144,15 @@ jobs:
       - name: Clone luci-app-openclash (APK)
         if: matrix.target == 'apk'
         run: |
-          cd $GITHUB_WORKSPACE/SNAPSDK/package
-          git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
-          cd luci-app-openclash && git sparse-checkout set luci-app-openclash
+          cd $GITHUB_WORKSPACE/SDK/package
+          if [ -d "luci-app-openclash" ]; then
+            cd luci-app-openclash
+            git fetch --depth 1 origin dev
+            git reset --hard origin/dev
+          else
+            git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
+            cd luci-app-openclash && git sparse-checkout set luci-app-openclash
+          fi
 
       - name: Compile po2lmo (APK)
         if: matrix.target == 'apk'
