@@ -68,9 +68,10 @@ jobs:
             "$BASE_URL" "$VER" \
             "$BASE_URL" "$VER")
           else
-          # Versi baru terdeteksi, build sedang berlangsung
-          STATUS="🔔 <b>Versi baru tersedia</b>"
-          MSG="🔔 <b>Versi baru tersedia</b>📌 Pre-release build sedang berlangsung"
+          # Versi baru terdeteksi → notif dimulai
+            MSG=$(printf "⚡ <b>Build OpenClash dimulai...</b>\n\n📌 <b>Versi baru:</b> %s\n📌 <b>Versi lama:</b> %s\n\nHarap tunggu beberapa menit 🚀" \
+              "$VER" \
+              "$OLD_VER")
           fi
 
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
