@@ -8,6 +8,7 @@ from telegram.ext import (
     Application, CommandHandler,
     ContextTypes, MessageHandler, filters
 )
+import os
 
 # Logging
 logging.basicConfig(
@@ -15,10 +16,12 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# Token bot (dari environment variable)
-import os
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
+# =========================
+# Storage rules grup
+# =========================
+GROUP_RULES = {}
 
 # =========================
 # Welcome otomatis
@@ -46,7 +49,6 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
 """
         await update.message.reply_html(text)
 
-
 # =========================
 # Goodbye otomatis
 # =========================
@@ -62,7 +64,6 @@ Semoga sukses di perjalanan berikutnya 🌟
 """
     await update.message.reply_html(text)
 
-
 # =========================
 # Hapus Pesan
 # =========================
@@ -76,19 +77,16 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("⚠️ Reply pesan yang ingin dihapus dengan /delete")
 
-
 # =========================
-# Kick User
+# Kick / Ban / Unban / Mute / Unmute
 # =========================
 async def kick(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     user_id = update.effective_user.id
-
     member = await context.bot.get_chat_member(chat_id, user_id)
     if member.status not in [ChatMember.ADMINISTRATOR, ChatMember.OWNER]:
         await update.message.reply_text("⚠️ Hanya admin yang bisa kick anggota.")
         return
-
     target_id = None
     if update.message.reply_to_message:
         target_id = update.message.reply_to_message.from_user.id
@@ -98,11 +96,9 @@ async def kick(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             await update.message.reply_text("⚠️ Format salah. Gunakan /kick <user_id>")
             return
-
     if not target_id:
         await update.message.reply_text("⚠️ Harap reply pesan atau gunakan /kick <user_id>")
         return
-
     try:
         await context.bot.ban_chat_member(chat_id, target_id)
         await context.bot.unban_chat_member(chat_id, target_id)
@@ -110,19 +106,13 @@ async def kick(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"⚠️ Gagal kick user: {e}")
 
-
-# =========================
-# Ban User
-# =========================
 async def ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     user_id = update.effective_user.id
-
     member = await context.bot.get_chat_member(chat_id, user_id)
     if member.status not in [ChatMember.ADMINISTRATOR, ChatMember.OWNER]:
         await update.message.reply_text("⚠️ Hanya admin yang bisa ban anggota.")
         return
-
     target_id = None
     if update.message.reply_to_message:
         target_id = update.message.reply_to_message.from_user.id
@@ -132,34 +122,25 @@ async def ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             await update.message.reply_text("⚠️ Format salah. Gunakan /ban <user_id>")
             return
-
     if not target_id:
         await update.message.reply_text("⚠️ Harap reply pesan atau gunakan /ban <user_id>")
         return
-
     try:
         await context.bot.ban_chat_member(chat_id, target_id)
         await update.message.reply_text(f"⛔ User {target_id} telah di-banned permanen.")
     except Exception as e:
         await update.message.reply_text(f"⚠️ Gagal ban user: {e}")
 
-
-# =========================
-# Unban User
-# =========================
 async def unban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     user_id = update.effective_user.id
-
     member = await context.bot.get_chat_member(chat_id, user_id)
     if member.status not in [ChatMember.ADMINISTRATOR, ChatMember.OWNER]:
         await update.message.reply_text("⚠️ Hanya admin yang bisa unban anggota.")
         return
-
     if not context.args:
         await update.message.reply_text("⚠️ Gunakan /unban <user_id>")
         return
-
     try:
         target_id = int(context.args[0])
         await context.bot.unban_chat_member(chat_id, target_id)
@@ -167,19 +148,13 @@ async def unban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"⚠️ Gagal unban user: {e}")
 
-
-# =========================
-# Mute & Unmute
-# =========================
 async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     user_id = update.effective_user.id
     member = await context.bot.get_chat_member(chat_id, user_id)
-
     if member.status not in [ChatMember.ADMINISTRATOR, ChatMember.OWNER]:
         await update.message.reply_text("⚠️ Hanya admin yang bisa mute anggota.")
         return
-
     target_id = None
     if update.message.reply_to_message:
         target_id = update.message.reply_to_message.from_user.id
@@ -189,11 +164,9 @@ async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             await update.message.reply_text("⚠️ Format salah. Gunakan /mute <user_id>")
             return
-
     if not target_id:
         await update.message.reply_text("⚠️ Harap reply pesan atau gunakan /mute <user_id>")
         return
-
     try:
         await context.bot.restrict_chat_member(
             chat_id, target_id, permissions=ChatPermissions(can_send_messages=False)
@@ -202,16 +175,13 @@ async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"⚠️ Gagal mute user: {e}")
 
-
 async def unmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     user_id = update.effective_user.id
     member = await context.bot.get_chat_member(chat_id, user_id)
-
     if member.status not in [ChatMember.ADMINISTRATOR, ChatMember.OWNER]:
         await update.message.reply_text("⚠️ Hanya admin yang bisa unmute anggota.")
         return
-
     target_id = None
     if update.message.reply_to_message:
         target_id = update.message.reply_to_message.from_user.id
@@ -221,11 +191,9 @@ async def unmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             await update.message.reply_text("⚠️ Format salah. Gunakan /unmute <user_id>")
             return
-
     if not target_id:
         await update.message.reply_text("⚠️ Harap reply pesan atau gunakan /unmute <user_id>")
         return
-
     try:
         await context.bot.restrict_chat_member(
             chat_id, target_id,
@@ -242,9 +210,8 @@ async def unmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"⚠️ Gagal unmute user: {e}")
 
-
 # =========================
-# Help Command
+# Help
 # =========================
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = """
@@ -257,16 +224,122 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
   - /delete → hapus pesan yang di-reply
 
 👮 Admin Tools
-  - /kick → keluarkan user sementara (reply pesan atau /kick <user_id>)
-  - /ban → banned permanen (reply pesan atau /ban <user_id>)
-  - /unban → buka banned (/unban <user_id>)
-  - /mute → bisukan user (reply pesan atau /mute <user_id>)
-  - /unmute → buka bisu user (reply pesan atau /unmute <user_id>)
+  - /kick → keluarkan user sementara
+  - /ban → banned permanen
+  - /unban → buka banned
+  - /mute → bisukan user
+  - /unmute → buka bisu user
+  - /pin → pin pesan (admin)
+  - /unpin → lepas pin (admin)
+  - /setrules → set rules grup (admin)
+  - /rules → tampilkan rules grup
 
-ℹ️ Gunakan reply pesan atau user_id sesuai kebutuhan
+ℹ️ User Info
+  - /whois <user_id> → info user
+  - /info → info grup
+  - /time → jam sekarang
+  - /date → tanggal hari ini
 """
     await update.message.reply_text(text)
 
+# =========================
+# Info Grup & User
+# =========================
+async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat
+    members_count = await context.bot.get_chat_members_count(chat.id)
+    admins = await context.bot.get_chat_administrators(chat.id)
+    text = f"""
+📌 Info Grup:
+Nama: {chat.title}
+ID: {chat.id}
+Jumlah member: {members_count}
+Jumlah admin: {len(admins)}
+"""
+    await update.message.reply_text(text)
+
+async def whois(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("Gunakan /whois <user_id>")
+        return
+    try:
+        user_id = int(context.args[0])
+        member = await context.bot.get_chat_member(update.effective_chat.id, user_id)
+        user = member.user
+        username = f"@{user.username}" if user.username else "Tidak ada"
+        text = f"""
+👤 Info User:
+Full Name: {user.full_name}
+Username: {username}
+ID: {user.id}
+"""
+        await update.message.reply_text(text)
+    except Exception as e:
+        await update.message.reply_text(f"⚠️ Gagal ambil info user: {e}")
+
+# =========================
+# Time & Date
+# =========================
+async def time_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    now = datetime.now().strftime("%H:%M:%S")
+    await update.message.reply_text(f"🕒 Jam sekarang: {now}")
+
+async def date_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    today = datetime.now().strftime("%d/%m/%Y")
+    await update.message.reply_text(f"📅 Tanggal hari ini: {today}")
+
+# =========================
+# Rules
+# =========================
+async def set_rules(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    user_id = update.effective_user.id
+    member = await context.bot.get_chat_member(chat_id, user_id)
+    if member.status not in [ChatMember.ADMINISTRATOR, ChatMember.OWNER]:
+        await update.message.reply_text("⚠️ Hanya admin yang bisa set rules.")
+        return
+    if not context.args:
+        await update.message.reply_text("Gunakan /setrules <teks rules>")
+        return
+    GROUP_RULES[chat_id] = " ".join(context.args)
+    await update.message.reply_text("✅ Rules grup berhasil disimpan.")
+
+async def get_rules(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    rules = GROUP_RULES.get(chat_id, "Rules belum diset.")
+    await update.message.reply_text(f"📜 Rules Grup:\n{rules}")
+
+# =========================
+# Pin / Unpin
+# =========================
+async def pin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    user_id = update.effective_user.id
+    member = await context.bot.get_chat_member(chat_id, user_id)
+    if member.status not in [ChatMember.ADMINISTRATOR, ChatMember.OWNER]:
+        await update.message.reply_text("⚠️ Hanya admin yang bisa pin pesan.")
+        return
+    if not update.message.reply_to_message:
+        await update.message.reply_text("⚠️ Reply pesan yang ingin di-pin.")
+        return
+    try:
+        await update.message.reply_to_message.pin()
+        await update.message.reply_text("📌 Pesan berhasil di-pin.")
+    except Exception as e:
+        await update.message.reply_text(f"⚠️ Gagal pin pesan: {e}")
+
+async def unpin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    user_id = update.effective_user.id
+    member = await context.bot.get_chat_member(chat_id, user_id)
+    if member.status not in [ChatMember.ADMINISTRATOR, ChatMember.OWNER]:
+        await update.message.reply_text("⚠️ Hanya admin yang bisa unpin pesan.")
+        return
+    try:
+        await context.bot.unpin_all_chat_messages(chat_id)
+        await update.message.reply_text("📌 Semua pesan berhasil di-unpin.")
+    except Exception as e:
+        await update.message.reply_text(f"⚠️ Gagal unpin pesan: {e}")
 
 # =========================
 # Main App
@@ -286,10 +359,17 @@ def main():
     app.add_handler(CommandHandler("mute", mute))
     app.add_handler(CommandHandler("unmute", unmute))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("info", info))
+    app.add_handler(CommandHandler("whois", whois))
+    app.add_handler(CommandHandler("time", time_cmd))
+    app.add_handler(CommandHandler("date", date_cmd))
+    app.add_handler(CommandHandler("setrules", set_rules))
+    app.add_handler(CommandHandler("rules", get_rules))
+    app.add_handler(CommandHandler("pin", pin))
+    app.add_handler(CommandHandler("unpin", unpin))
 
     print("🤖 Bot berjalan...")
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()
