@@ -68,8 +68,8 @@ jobs:
             "$BASE_URL" "$VER" \
             "$BASE_URL" "$VER")
           else
-          # Versi baru terdeteksi → notif dimulai
-            MSG=$(printf "⚡ <b>Build OpenClash dimulai...</b>\n\n📌 <b>Versi baru:</b> %s\n📌 <b>Versi lama:</b> %s\n\nHarap tunggu beberapa menit 🚀" \
+          # Versi baru terdeteksi → notif build dimulai
+            MSG=$(printf "⚡ <b>Build OpenClash dimulai...</b>\n═══════════════════════\n📌 <b>Versi baru:</b> %s\n📌 <b>Versi lama:</b> %s\n═══════════════════════\nHarap tunggu beberapa menit 🚀" \
               "$VER" \
               "$OLD_VER")
           fi
