@@ -61,7 +61,7 @@ jobs:
           # Versi sama dengan terakhir
           STATUS="ℹ️ <b>Tidak ada versi baru</b>"
           HEADER="Versi terakhir: <b>$VER</b>"
-          MSG=$(printf "%s\n%s\n\n━━━━━━━━━━━━━━━\n🔗 <b>Release:</b> <a href=\"%s\">Klik di sini</a>\n📦 <b>IPK:</b> <a href=\"%s/luci-app-openclash_%s_all.ipk\">Download</a>\n📱 <b>APK:</b> <a href=\"%s/luci-app-openclash-%s.apk\">Download</a>" \
+          MSG=$(printf "%s\n%s\n\n═══════════════════════\n🔗 <b>Release:</b> <a href=\"%s\">Klik di sini</a>\n📦 <b>IPK:</b> <a href=\"%s/luci-app-openclash_%s_all.ipk\">Download</a>\n📱 <b>APK:</b> <a href=\"%s/luci-app-openclash-%s.apk\">Download</a>" \
             "$STATUS" \
             "$HEADER" \
             "$RELEASE_URL" \
@@ -234,7 +234,7 @@ jobs:
           IPK_FILE="luci-app-openclash_${VER}_all.ipk"
           APK_FILE="luci-app-openclash-${VER}.apk"
 
-          MSG=$(printf "✅ Build OpenClash Selesai!\n━━━━━━━━━━━━━━━\nVersi baru: %s\nVersi lama: %s\n━━━━━━━━━━━━━━━\n🕒 Start: %s\n⏱ Durasi: %dm %ds\n━━━━━━━━━━━━━━━\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/%s\">Download</a>\n📱 APK: <a href=\"%s/%s\">Download</a>" \
+          MSG=$(printf "✅ Build OpenClash Selesai!\n═══════════════════════\nVersi baru: %s\nVersi lama: %s\n═══════════════════════\n🕒 Start: %s\n⏱ Durasi: %dm %ds\n═══════════════════════\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/%s\">Download</a>\n📱 APK: <a href=\"%s/%s\">Download</a>" \
             "$VER" \
             "$OLD_VER" \
             "$BUILD_START_HUMAN" \
