@@ -1,7 +1,7 @@
 name: Tes Notif Telegram
 
 on:
-  workflow_dispatch:  # Bisa dipicu manual dari tab Actions
+  workflow_dispatch:
 
 jobs:
   test-notif:
@@ -9,7 +9,7 @@ jobs:
     steps:
       - name: Kirim pesan tes 1 (info)
         run: |
-          MSG="ℹ️ <b>Tidak ada versi baru</b>\n\n📌 Versi terakhir: <b>v0.46.064</b>\n🔗 <a href='https://github.com/tes-rep/OpenClash/releases/tag/v0.46.064'>Release</a>"
+          MSG=$(printf "ℹ️ <b>Tidak ada versi baru</b>\n\n📌 Versi terakhir: <b>v0.46.064</b>\n🔗 <a href='https://github.com/tes-rep/OpenClash/releases/tag/v0.46.064'>Release</a>")
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
             -d text="$MSG" \
@@ -17,7 +17,7 @@ jobs:
 
       - name: Kirim pesan tes 2 (build dimulai)
         run: |
-          MSG="⚡ <b>Build OpenClash dimulai...</b>\n\n📌 Versi baru: <b>v0.46.065</b>\n📌 Versi lama: <b>v0.46.064</b>\n\nHarap tunggu beberapa menit 🚀"
+          MSG=$(printf "⚡ <b>Build OpenClash dimulai...</b>\n\n📌 Versi baru: <b>v0.46.065</b>\n📌 Versi lama: <b>v0.46.064</b>\n\nHarap tunggu beberapa menit 🚀")
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
             -d text="$MSG" \
@@ -25,7 +25,7 @@ jobs:
 
       - name: Kirim pesan tes 3 (build selesai)
         run: |
-          MSG="✅ <b>Build OpenClash Selesai!</b>\n═══════════════════════\n📌 Versi baru: <b>v0.46.065</b>\n🕒 Start: 2025-08-18 12:10:33 WIB\n⏱ Durasi: 3m 42s\n═══════════════════════\n🔗 <a href='https://github.com/tes-rep/OpenClash/releases/tag/v0.46.065'>Release</a>\n📦 <a href='https://github.com/tes-rep/OpenClash/releases/download/v0.46.065/luci-app-openclash_v0.46.065_all.ipk'>IPK</a>\n📱 <a href='https://github.com/tes-rep/OpenClash/releases/download/v0.46.065/luci-app-openclash-v0.46.065.apk'>APK</a>"
+          MSG=$(printf "✅ <b>Build OpenClash Selesai!</b>\n═══════════════════════\n📌 Versi baru: <b>v0.46.065</b>\n🕒 Start: 2025-08-18 12:10:33 WIB\n⏱ Durasi: 3m 42s\n═══════════════════════\n🔗 <a href='https://github.com/tes-rep/OpenClash/releases/tag/v0.46.065'>Release</a>\n📦 <a href='https://github.com/tes-rep/OpenClash/releases/download/v0.46.065/luci-app-openclash_v0.46.065_all.ipk'>IPK</a>\n📱 <a href='https://github.com/tes-rep/OpenClash/releases/download/v0.46.065/luci-app-openclash-v0.46.065.apk'>APK</a>")
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
             -d text="$MSG" \
