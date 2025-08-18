@@ -21,7 +21,7 @@ jobs:
       - name: Cek versi terbaru
         id: setvar
         run: |
-          LATEST_VER=$(curl -s https://raw.githubusercontent.com/unifreq/linux-6.12.y/refs/heads/main/Makefile | grep -oP '(?<=SUBLEVEL =)[0-9\.]+')
+          LATEST_VER=$(curl -s https://raw.githubusercontent.com/unifreq/linux-6.12.y/main/Makefile | grep -oP '(?<=SUBLEVEL =)[0-9\.]+')
           echo "latest_ver=$LATEST_VER" >> $GITHUB_OUTPUT
           echo "Versi terbaru: $LATEST_VER"
 
