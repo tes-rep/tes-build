@@ -4,7 +4,7 @@ from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Application, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 
 # Ambil token dari environment (supaya aman di GitHub Actions)
-TOKEN = os.getenv("BOT_TOKEN")
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 # Fungsi ucapan selamat datang
 async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
