@@ -25,7 +25,16 @@ jobs:
 
       - name: Kirim pesan tes 3 (build selesai)
         run: |
-          MSG=$(printf "✅ <b>Build OpenClash Selesai!</b>\n═══════════════════════\n📌 Versi baru: <b>v0.46.065</b>\n🕒 Start: 2025-08-18 12:10:33 WIB\n⏱ Durasi: 3m 42s\n═══════════════════════\n🔗 <a href='https://github.com/tes-rep/OpenClash/releases/tag/v0.46.065'>Release</a>\n📦 <a href='https://github.com/tes-rep/OpenClash/releases/download/v0.46.065/luci-app-openclash_v0.46.065_all.ipk'>IPK</a>\n📱 <a href='https://github.com/tes-rep/OpenClash/releases/download/v0.46.065/luci-app-openclash-v0.46.065.apk'>APK</a>")
+          OLD_VER="v0.46.064"
+          NEW_VER="v0.46.065"
+
+          MSG=$(printf "✅ <b>Build OpenClash Selesai!</b>\n═══════════════════════\n📌 Versi baru: <b>%s</b>\n📌 Versi lama: <b>%s</b>\n🕒 Start: 2025-08-18 12:10:33 WIB\n⏱ Durasi: 3m 42s\n═══════════════════════\n🔗 <a href='https://github.com/tes-rep/OpenClash/releases/tag/%s'>Release</a>\n📦 <a href='https://github.com/tes-rep/OpenClash/releases/download/%s/luci-app-openclash_%s_all.ipk'>IPK</a>\n📱 <a href='https://github.com/tes-rep/OpenClash/releases/download/%s/luci-app-openclash-%s.apk'>APK</a>" \
+            "$NEW_VER" \
+            "$OLD_VER" \
+            "$NEW_VER" \
+            "$NEW_VER" "$NEW_VER" \
+            "$NEW_VER" "$NEW_VER")
+
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
             -d text="$MSG" \
