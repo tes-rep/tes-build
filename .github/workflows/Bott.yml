@@ -1,0 +1,31 @@
+name: Telegram Bot Auto-Run
+
+on:
+  workflow_dispatch:        # Bisa dijalankan manual
+  schedule:
+    - cron: "0 */6 * * *"   # Auto jalan tiap 6 jam
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350    # Biar jalan ~5 jam 50 menit (kurang dari limit 6 jam)
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install python-telegram-bot==20.0
+
+      - name: Run bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        run: |
+          echo "🚀 Menjalankan bot Telegram..."
+          python bot.py
