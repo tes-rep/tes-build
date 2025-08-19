@@ -22,7 +22,11 @@ jobs:
           URLS=("https://raw.githubusercontent.com/unifreq/linux-6.12.y/main/Makefile"
                 "https://raw.githubusercontent.com/unifreq/linux-6.6.y/main/Makefile")
 
-          # Array chat_id Telegram (hilangkan duplikat jika ada)
+          # Ambil chat_id Telegram, hilangkan duplikat
+          if [ -z "${{ secrets.TELEGRAM_CHAT_ID }}" ]; then
+            echo "❌ Secret TELEGRAM_CHAT_ID kosong, hentikan workflow"
+            exit 1
+          fi
           CHAT_IDS=($(echo "${{ secrets.TELEGRAM_CHAT_ID }}" | tr ',' '\n' | sort -u))
 
           for URL in "${URLS[@]}"; do
@@ -35,10 +39,13 @@ jobs:
               continue
             fi
 
-            # Ambil versi terbaru
-            LATEST_VER=$(echo "$CONTENT" | grep -oP '(?<=SUBLEVEL =)[0-9\.]+')
-            if [ -z "$LATEST_VER" ]; then
-              echo "⚠️ Versi tidak ditemukan di $URL, lewati..."
+            # Ambil versi lengkap kernel
+            VERSION=$(echo "$CONTENT" | grep -oP '(?<=VERSION = )\d+')
+            PATCHLEVEL=$(echo "$CONTENT" | grep -oP '(?<=PATCHLEVEL = )\d+')
+            SUBLEVEL=$(echo "$CONTENT" | grep -oP '(?<=SUBLEVEL = )\d+')
+            LATEST_VER="$VERSION.$PATCHLEVEL.$SUBLEVEL"
+            if [ -z "$VERSION" ] || [ -z "$PATCHLEVEL" ] || [ -z "$SUBLEVEL" ]; then
+              echo "⚠️ Versi tidak lengkap di $URL, lewati..."
               continue
             fi
 
@@ -68,7 +75,7 @@ jobs:
               Harap tunggu beberapa menit 🚀"
             else
               MSG="ℹ️ <b>$NAME tidak ada versi baru</b>
-            Versi terakhir: v$LATEST_VER"
+             Versi terakhir: v$LATEST_VER"
             fi
 
             # Kirim notif ke semua chat_id unik
