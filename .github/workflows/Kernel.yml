@@ -1,4 +1,4 @@
-name: notif kernel multi
+vmess://name: notif kernel multi
 
 on:
   workflow_dispatch:
@@ -28,6 +28,9 @@ jobs:
             exit 1
           fi
           CHAT_IDS=($(echo "${{ secrets.TELEGRAM_CHAT_ID }}" | tr ',' '\n' | sort -u))
+
+          # URL release kernel
+          RELEASE_URL="https://github.com/tes-rep/kernel/releases"
 
           for URL in "${URLS[@]}"; do
             # Buat identifier unik per kernel
@@ -70,13 +73,15 @@ jobs:
 
               MSG="⚡ <b>Versi baru tersedia</b>
               ═══════════════════════
-             📌 <b>Versi baru:</b> v$LATEST_VER
-             📌 <b>Versi lama:</b> $OLD_VER
-             ═══════════════════════
+              📌 <b>Versi baru:</b> v$LATEST_VER
+              📌 <b>Versi lama:</b> $OLD_VER
+              📌 <b>Link release:</b> <a href='$RELEASE_URL'>Klik di sini</a>
+              ═══════════════════════
              Silakan build kernel..."
             else
               MSG="ℹ️ <b>$NAME tidak ada versi baru</b>
-            Versi terakhir: v$LATEST_VER"
+            Versi terakhir: v$LATEST_VER
+           📌 <b>Link release:</b> <a href='$RELEASE_URL'>Klik di sini</a>"
             fi
 
             # Kirim notif ke semua chat_id unik
@@ -84,6 +89,8 @@ jobs:
               curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
                 -d chat_id="$CHAT_ID" \
                 -d text="$MSG" \
-                -d parse_mode="HTML"
+                -d parse_mode="HTML" \
+                -d disable_web_page_preview=true
             done
           done
+==
