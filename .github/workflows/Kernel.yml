@@ -19,7 +19,7 @@ jobs:
         run: |
           # Daftar URL Makefile kernel berbeda
           URLS=("https://raw.githubusercontent.com/unifreq/linux-6.12.y/main/Makefile"
-                "https://raw.githubusercontent.com/unifreq/linux-6.13.y/main/Makefile")
+                "https://raw.githubusercontent.com/unifreq/linux-6.6.y/main/Makefile")
 
           # Array chat_id Telegram
           CHAT_IDS=("${{ secrets.TELEGRAM_CHAT_ID1 }}" "${{ secrets.TELEGRAM_CHAT_ID2 }}")
