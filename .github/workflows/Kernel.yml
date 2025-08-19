@@ -1,4 +1,4 @@
-vmess://name: notif kernel multi
+name: notif kernel multi
 
 on:
   workflow_dispatch:
