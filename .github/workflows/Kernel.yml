@@ -30,7 +30,9 @@ jobs:
           CHAT_IDS=($(echo "${{ secrets.TELEGRAM_CHAT_ID }}" | tr ',' '\n' | sort -u))
 
           for URL in "${URLS[@]}"; do
-            NAME=$(basename $(dirname $URL))
+            # Buat identifier unik per kernel
+            NAME=$(echo $URL | grep -oP 'linux-\d+\.\d+\.y')
+            FILE="$NAME.txt"
 
             # Ambil konten Makefile
             CONTENT=$(curl -s $URL)
@@ -50,14 +52,13 @@ jobs:
             fi
 
             # Ambil versi lama
-            FILE="$NAME.txt"
             if [ -f $FILE ]; then
               OLD_VER=$(cat $FILE)
             else
               OLD_VER="tidak tersedia"
             fi
 
-            # Tentukan status build
+            # Tentukan status build / notif
             if [ "$OLD_VER" != "$LATEST_VER" ]; then
               echo "$LATEST_VER" > $FILE
               git config user.name "github-actions"
@@ -67,15 +68,15 @@ jobs:
               git pull --rebase --quiet || true
               git push --quiet || true
 
-              MSG="⚡ <b>Build $NAME dimulai...</b>
+              MSG="⚡ <b>Versi baru tersedia</b>
               ═══════════════════════
-              📌 <b>Versi baru:</b> v$LATEST_VER
-              📌 <b>Versi lama:</b> $OLD_VER
-               ═══════════════════════
-              Harap tunggu beberapa menit 🚀"
+             📌 <b>Versi baru:</b> v$LATEST_VER
+             📌 <b>Versi lama:</b> $OLD_VER
+             ═══════════════════════
+             Silakan build kernel..."
             else
               MSG="ℹ️ <b>$NAME tidak ada versi baru</b>
-             Versi terakhir: v$LATEST_VER"
+            Versi terakhir: v$LATEST_VER"
             fi
 
             # Kirim notif ke semua chat_id unik
