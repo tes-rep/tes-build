@@ -15,23 +15,34 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 1
 
-      - name: Cek beberapa versi dan notif ke 2 chat Telegram
+      - name: Cek beberapa versi dan notif Telegram
+        shell: bash
         run: |
           # Daftar URL Makefile kernel berbeda
           URLS=("https://raw.githubusercontent.com/unifreq/linux-6.12.y/main/Makefile"
                 "https://raw.githubusercontent.com/unifreq/linux-6.6.y/main/Makefile")
 
-          # Array chat_id Telegram
-          CHAT_IDS=("${{ secrets.TELEGRAM_CHAT_ID1 }}" "${{ secrets.TELEGRAM_CHAT_ID2 }}")
+          # Array chat_id Telegram (hilangkan duplikat jika ada)
+          CHAT_IDS=($(echo "${{ secrets.TELEGRAM_CHAT_IDS }}" | tr ',' '\n' | sort -u))
 
           for URL in "${URLS[@]}"; do
-            # Identifier kernel dari nama folder terakhir
             NAME=$(basename $(dirname $URL))
 
-            # Ambil versi terbaru
-            LATEST_VER=$(curl -s $URL | grep -oP '(?<=SUBLEVEL =)[0-9\.]+')
+            # Ambil konten Makefile
+            CONTENT=$(curl -s $URL)
+            if [ -z "$CONTENT" ]; then
+              echo "⚠️ Gagal ambil $URL, lewati..."
+              continue
+            fi
 
-            # Ambil versi lama dari file
+            # Ambil versi terbaru
+            LATEST_VER=$(echo "$CONTENT" | grep -oP '(?<=SUBLEVEL =)[0-9\.]+')
+            if [ -z "$LATEST_VER" ]; then
+              echo "⚠️ Versi tidak ditemukan di $URL, lewati..."
+              continue
+            fi
+
+            # Ambil versi lama
             FILE="$NAME.txt"
             if [ -f $FILE ]; then
               OLD_VER=$(cat $FILE)
@@ -51,16 +62,16 @@ jobs:
 
               MSG="⚡ <b>Build $NAME dimulai...</b>
               ═══════════════════════
-             📌 <b>Versi baru:</b> v$LATEST_VER
-             📌 <b>Versi lama:</b> $OLD_VER
-             ═══════════════════════
-             Harap tunggu beberapa menit 🚀"
+              📌 <b>Versi baru:</b> v$LATEST_VER
+              📌 <b>Versi lama:</b> $OLD_VER
+               ═══════════════════════
+              Harap tunggu beberapa menit 🚀"
             else
               MSG="ℹ️ <b>$NAME tidak ada versi baru</b>
             Versi terakhir: v$LATEST_VER"
             fi
 
-            # Kirim notif ke semua chat_id
+            # Kirim notif ke semua chat_id unik
             for CHAT_ID in "${CHAT_IDS[@]}"; do
               curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
                 -d chat_id="$CHAT_ID" \
