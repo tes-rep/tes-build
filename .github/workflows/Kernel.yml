@@ -23,7 +23,7 @@ jobs:
                 "https://raw.githubusercontent.com/unifreq/linux-6.6.y/main/Makefile")
 
           # Array chat_id Telegram (hilangkan duplikat jika ada)
-          CHAT_IDS=($(echo "${{ secrets.TELEGRAM_CHAT_IDS }}" | tr ',' '\n' | sort -u))
+          CHAT_IDS=($(echo "${{ secrets.TELEGRAM_CHAT_ID }}" | tr ',' '\n' | sort -u))
 
           for URL in "${URLS[@]}"; do
             NAME=$(basename $(dirname $URL))
