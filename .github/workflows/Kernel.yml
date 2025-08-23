@@ -79,7 +79,7 @@ jobs:
               ═══════════════════════
              Silakan build kernel..."
             else
-              MSG="ℹ️ <b>$NAME tidak ada versi baru</b>
+              MSG="ℹ️ <b>kernel $NAME tidak ada versi baru</b>
               ═══════════════════════
            📌 <b>Versi terakhir:</b> v$LATEST_VER
               ═══════════════════════
