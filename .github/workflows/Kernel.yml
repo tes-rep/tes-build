@@ -81,7 +81,7 @@ jobs:
             else
               MSG="ℹ️ <b>$NAME tidak ada versi baru</b>
               ═══════════════════════
-           📌 <b>Versi terakhir: v$LATEST_VER<b>
+           📌 <b>Versi terakhir:</b> v$LATEST_VER
               ═══════════════════════
            📌 <b>Link release:</b> <a href='$RELEASE_URL'>Klik di sini</a>"
             fi
