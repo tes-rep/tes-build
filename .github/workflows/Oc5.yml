@@ -21,12 +21,19 @@ jobs:
       - name: Cek versi terbaru
         id: setvar
         run: |
+
+          # Buat folder data untuk simpan info versi
+          mkdir -p data/openclash
+
+          # Path file versi
+          LAST_VER_FILE="data/openclash/last_version.txt"
+        
           LATEST_VER=$(curl -s https://raw.githubusercontent.com/vernesong/OpenClash/dev/luci-app-openclash/Makefile | grep -oP '(?<=PKG_VERSION:=)[0-9\.]+')
           echo "latest_ver=$LATEST_VER" >> $GITHUB_OUTPUT
           echo "Versi terbaru: $LATEST_VER"
 
-          if [ -f last_version.txt ]; then
-            LAST_VER=$(cat last_version.txt)
+          if [ -f "$LAST_VER_FILE" ]; then
+            LAST_VER=$(cat "$LAST_VER_FILE")
           else
             LAST_VER=""
           fi
@@ -34,10 +41,10 @@ jobs:
           if [ "$LAST_VER" = "$LATEST_VER" ]; then
             echo "skip_build=true" >> $GITHUB_OUTPUT
           else
-            echo "$LATEST_VER" > last_version.txt
+            echo "$LATEST_VER" > "$LAST_VER_FILE"
             git config user.name "github-actions"
             git config user.email "actions@github.com"
-            git add last_version.txt
+            git add "$LAST_VER_FILE"
             git commit -m "Update last_version.txt ke $LATEST_VER" --quiet || true
             git pull --rebase --quiet || true
             git push --quiet || true
