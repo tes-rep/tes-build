@@ -87,6 +87,9 @@ jobs:
           mkdir -p data/kernel
           CHAT_IDS=($(echo "${{ secrets.TELEGRAM_CHAT_ID }}" | tr ',' '\n' | sort -u))
 
+          # Konversi tanggal ke WIB
+          COMMIT_DATE_WIB=$(date -d "$COMMIT_DATE_RAW +7 hours" '+%d-%m-%Y %H:%M:%S WIB')
+
           for URL in "${URLS[@]}"; do
             NAME=$(echo $URL | grep -oP 'linux-\d+\.\d+\.y')
             FILE_COMMIT="data/kernel/$NAME.commit"
@@ -112,7 +115,7 @@ jobs:
               📌 <b>Kernel:</b> $NAME
               📌 <b>Commit:</b> <a href='https://github.com/$REPO/commit/$LATEST_COMMIT'>$LATEST_COMMIT</a>
               📌 <b>Author:</b> $COMMIT_AUTHOR
-              📌 <b>Tanggal:</b> $COMMIT_DATE
+              📌 <b>Tanggal:</b> $COMMIT_DATE_WIB
               ═══════════════════════
               💬 <b>Message:</b> $COMMIT_MSG"
             else
