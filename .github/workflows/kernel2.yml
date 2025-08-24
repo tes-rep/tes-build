@@ -23,8 +23,10 @@ jobs:
           # Daftar URL Makefile kernel berbeda
           URLS=("https://raw.githubusercontent.com/unifreq/linux-6.12.y/main/Makefile"
                 "https://raw.githubusercontent.com/unifreq/linux-6.6.y/main/Makefile")
+          
           # Buat folder untuk simpan hasil
           mkdir -p data/kernel
+          
           # Ambil chat_id Telegram, hilangkan duplikat
           if [ -z "${{ secrets.TELEGRAM_CHAT_ID }}" ]; then
             echo "❌ Secret TELEGRAM_CHAT_ID kosong, hentikan workflow"
