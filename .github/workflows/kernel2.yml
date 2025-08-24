@@ -46,13 +46,18 @@ jobs:
               echo "$LATEST_VER" > $FILE
               git add $FILE
               MSG="⚡ <b>Versi baru tersedia</b>
-              📌 <b>Kernel:</b> $NAME
+              ═══════════════════════
               📌 <b>Versi baru:</b> v$LATEST_VER
               📌 <b>Versi lama:</b> $OLD_VER
-              📌 <b>Link release:</b> <a href='$RELEASE_URL'>Klik di sini</a>"
+              📌 <b>Link release:</b> <a href='$RELEASE_URL'>Klik di sini</a>
+              ═══════════════════════
+             Silakan build kernel..."
             else
-              MSG="ℹ️ <b>$NAME tidak ada versi baru</b>
-              📌 <b>Versi terakhir:</b> v$LATEST_VER"
+              MSG="ℹ️ <b>kernel $NAME tidak ada versi baru</b>
+              ═══════════════════════
+              📌 <b>Versi terakhir:</b> v$LATEST_VER
+              ═══════════════════════
+              📌 <b>Link release:</b> <a href='$RELEASE_URL'>Klik di sini</a>"
             fi
 
             for CHAT_ID in "${CHAT_IDS[@]}"; do
@@ -102,14 +107,19 @@ jobs:
               echo "$LATEST_COMMIT" > $FILE_COMMIT
               git add $FILE_COMMIT
               MSG="🆕 <b>Commit baru terdeteksi</b>
+              ═══════════════════════
               📌 <b>Kernel:</b> $NAME
               📌 <b>Commit:</b> <a href='https://github.com/$REPO/commit/$LATEST_COMMIT'>$LATEST_COMMIT</a>
               📌 <b>Author:</b> $COMMIT_AUTHOR
               📌 <b>Tanggal:</b> $COMMIT_DATE
+              ═══════════════════════
               💬 <b>Message:</b> $COMMIT_MSG"
             else
               MSG="ℹ️ <b>$NAME tidak ada commit baru</b>
-              📌 <b>Commit terakhir:</b> <a href='https://github.com/$REPO/commit/$LATEST_COMMIT'>$LATEST_COMMIT</a>"
+              ═══════════════════════
+              📌 <b>Commit terakhir:</b> <a href='https://github.com/$REPO/commit/$LATEST_COMMIT'>$LATEST_COMMIT</a>
+              ═══════════════════════
+              💬 <b>Message:</b> $COMMIT_MSG"
             fi
 
             for CHAT_ID in "${CHAT_IDS[@]}"; do
