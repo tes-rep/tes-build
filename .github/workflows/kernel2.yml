@@ -18,6 +18,8 @@ jobs:
       - name: Cek beberapa versi dan notif Telegram
         shell: bash
         run: |
+          set -e
+
           # Daftar URL Makefile kernel berbeda
           URLS=("https://raw.githubusercontent.com/unifreq/linux-6.12.y/main/Makefile"
                 "https://raw.githubusercontent.com/unifreq/linux-6.6.y/main/Makefile")
@@ -33,6 +35,9 @@ jobs:
           RELEASE_URL="https://github.com/tes-rep/kernel/releases"
 
           for URL in "${URLS[@]}"; do
+            VER_CHANGED=false
+            COMMIT_CHANGED=false
+
             # Buat identifier unik per kernel
             NAME=$(echo $URL | grep -oP 'linux-\d+\.\d+\.y')
             FILE="$NAME.txt"
@@ -50,6 +55,7 @@ jobs:
             PATCHLEVEL=$(echo "$CONTENT" | grep -oP '(?<=PATCHLEVEL = )\d+')
             SUBLEVEL=$(echo "$CONTENT" | grep -oP '(?<=SUBLEVEL = )\d+')
             LATEST_VER="$VERSION.$PATCHLEVEL.$SUBLEVEL"
+
             if [ -z "$VERSION" ] || [ -z "$PATCHLEVEL" ] || [ -z "$SUBLEVEL" ]; then
               echo "⚠️ Versi tidak lengkap di $URL, lewati..."
               continue
@@ -62,28 +68,22 @@ jobs:
               OLD_VER="tidak tersedia"
             fi
 
-            # Tentukan status build / notif
+            # Tentukan status versi
             if [ "$OLD_VER" != "$LATEST_VER" ]; then
+              VER_CHANGED=true
               echo "$LATEST_VER" > $FILE
-              git config user.name "github-actions"
-              git config user.email "actions@github.com"
               git add $FILE
-              git commit -m "Update $FILE ke $LATEST_VER" --quiet || true
-              git pull --rebase --quiet || true
-              git push --quiet || true
-
               MSG="⚡ <b>Versi baru tersedia</b>
               ═══════════════════════
               📌 <b>Versi baru:</b> v$LATEST_VER
               📌 <b>Versi lama:</b> $OLD_VER
               📌 <b>Link release:</b> <a href='$RELEASE_URL'>Klik di sini</a>
               ═══════════════════════
-             Silakan build kernel..."
+              Silakan build kernel..."
             else
               MSG="ℹ️ <b>kernel $NAME tidak ada versi baru</b>
               ═══════════════════════
               📌 <b>Versi terakhir:</b> v$LATEST_VER
-              ═══════════════════════
               📌 <b>Link release:</b> <a href='$RELEASE_URL'>Klik di sini</a>"
             fi
 
@@ -107,11 +107,10 @@ jobs:
               OLD_COMMIT="tidak ada"
             fi
          
-            COMMIT_CHANGED=false
             if [ "$LATEST_COMMIT" != "$OLD_COMMIT" ]; then
+              COMMIT_CHANGED=true
               echo "$LATEST_COMMIT" > $FILE_COMMIT
               git add $FILE_COMMIT
-              COMMIT_CHANGED=true
               MSG="🆕 <b>Commit baru terdeteksi</b>
               ═══════════════════════
               📌 <b>Kernel:</b> $NAME
