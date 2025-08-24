@@ -90,7 +90,7 @@ jobs:
         if: steps.merge.outputs.merge_success == 'false'
         run: |
           MESSAGE="⚠️ *Sync conflict* di branch \`${{ matrix.branch }}\`\n📌 *Commit baru upstream:* ${{ steps.upstream_commits.outputs.commits }}\n\n\`\`\`\n${{ steps.upstream_commits.outputs.summary }}\n\`\`\`\n\n🔗 [PR dibuat](${{ steps.pr.outputs.pull-request-url }})"
-          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage \
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
             -d parse_mode=MarkdownV2 \
             -d text="$MESSAGE"
