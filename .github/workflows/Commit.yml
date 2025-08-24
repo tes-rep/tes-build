@@ -1,0 +1,96 @@
+name: Sync Fork (Multi-Branch with PR & Telegram + Commit Summary)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *" # jalan tiap hari jam 00:00 UTC
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    strategy:
+      matrix:
+        branch: [ "main", "dev", "stable" ]   # daftar branch yang mau disync
+
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Config git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+      - name: Add upstream
+        run: |
+          git remote add upstream https://github.com/OWNER/REPO.git
+          git fetch upstream
+
+      - name: Checkout target branch
+        run: git checkout ${{ matrix.branch }}
+
+      - name: Check new commits from upstream
+        id: upstream_commits
+        run: |
+          COMMITS=$(git log --oneline HEAD..upstream/${{ matrix.branch }} | wc -l)
+          SUMMARY=$(git log --oneline HEAD..upstream/${{ matrix.branch }} | head -n 5 | sed 's/`/\\`/g')
+          echo "commits=$COMMITS" >> $GITHUB_OUTPUT
+          echo "summary=$SUMMARY" >> $GITHUB_OUTPUT
+
+      - name: Try merge upstream
+        id: merge
+        run: |
+          set -e
+          if git merge upstream/${{ matrix.branch }} --no-commit --no-ff; then
+            echo "merge_success=true" >> $GITHUB_OUTPUT
+          else
+            echo "merge_success=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit & Push if merge success
+        if: steps.merge.outputs.merge_success == 'true'
+        run: |
+          if git diff --cached --quiet; then
+            echo "✅ Tidak ada perubahan di branch ${{ matrix.branch }}"
+          else
+            git commit -m "🔄 Sync branch '${{ matrix.branch }}' from upstream"
+            git push origin ${{ matrix.branch }}
+          fi
+
+      - name: Telegram notify (success)
+        if: steps.merge.outputs.merge_success == 'true'
+        run: |
+          MESSAGE="✅ *Sync branch* \`${{ matrix.branch }}\` *sukses*\n📌 *Commit baru:* ${{ steps.upstream_commits.outputs.commits }}\n\n\`\`\`\n${{ steps.upstream_commits.outputs.summary }}\n\`\`\`"
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d parse_mode=MarkdownV2 \
+            -d text="$MESSAGE"
+
+      - name: Create PR if conflict
+        if: steps.merge.outputs.merge_success == 'false'
+        id: pr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: sync/${{ matrix.branch }}
+          title: "⚠️ Sync conflict on branch '${{ matrix.branch }}'"
+          body: |
+            Konflik saat sync dengan upstream di branch **${{ matrix.branch }}**.
+            Mohon review & resolve conflict manual.
+          base: ${{ matrix.branch }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Telegram notify (conflict/PR)
+        if: steps.merge.outputs.merge_success == 'false'
+        run: |
+          MESSAGE="⚠️ *Sync conflict* di branch \`${{ matrix.branch }}\`\n📌 *Commit baru upstream:* ${{ steps.upstream_commits.outputs.commits }}\n\n\`\`\`\n${{ steps.upstream_commits.outputs.summary }}\n\`\`\`\n\n🔗 [PR dibuat](${{ steps.pr.outputs.pull-request-url }})"
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d parse_mode=MarkdownV2 \
+            -d text="$MESSAGE"
