@@ -40,8 +40,8 @@ jobs:
 
             # Buat identifier unik per kernel
             NAME=$(echo $URL | grep -oP 'linux-\d+\.\d+\.y')
-            FILE="$NAME.txt"
-            FILE_COMMIT="$NAME.commit"
+            FILE="kernel/$NAME.txt"
+            FILE_COMMIT="kernel/$NAME.commit"
             
             # Ambil konten Makefile
             CONTENT=$(curl -s $URL)
