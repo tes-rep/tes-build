@@ -255,4 +255,5 @@ jobs:
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
             -d text="$MSG" \
-            -d parse_mode="HTML"
+            -d parse_mode="HTML" \
+            -d disable_web_page_preview=true
