@@ -37,6 +37,7 @@ jobs:
             NAME=$(echo $URL | grep -oP 'linux-\d+\.\d+\.y')
             FILE="$NAME.txt"
             FILE_COMMIT="$NAME.commit"
+            
             # Ambil konten Makefile
             CONTENT=$(curl -s $URL)
             if [ -z "$CONTENT" ]; then
@@ -119,6 +120,22 @@ jobs:
               📌 <b>Tanggal:</b> $COMMIT_DATE
               ────────────────────────
               💬 <b>Message:</b> $COMMIT_MSG"
+            fi
+
+            # Kalau ada perubahan, commit ke repo + push
+            if $VER_CHANGED || $COMMIT_CHANGED; then
+              git config user.name "github-actions"
+              git config user.email "actions@github.com"
+              git commit -m "Update $NAME (versi/commit)" --quiet || true
+              git pull --rebase --quiet || true
+              git push --quiet || true
+            else
+              MSG="ℹ️ <b>$NAME tidak ada update</b>
+              ═══════════════════════
+              📌 <b>Versi terakhir:</b> v$LATEST_VER
+              📌 <b>Commit terakhir:</b> <a href='https://github.com/$REPO/commit/$LATEST_COMMIT'>$LATEST_COMMIT</a>
+              📌 <b>Author:</b> $COMMIT_AUTHOR
+              📌 <b>Tanggal:</b> $COMMIT_DATE"
             fi
 
             # Kirim notif ke semua chat_id unik
