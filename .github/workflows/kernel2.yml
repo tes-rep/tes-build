@@ -139,3 +139,69 @@ jobs:
           git commit -m "Update commit kernel" --quiet || true
           git pull --rebase --quiet || true
           git push --quiet || true
+
+       # --- Notifikasi Commit ---
+      - name: Cek Commit Terbaru
+        shell: bash
+        run: |
+          # Ambil commit terbaru
+          REPO="vernesong/mihomo"
+          BRANCH="Alpha"
+
+          # Buat folder data untuk simpan info versi
+          mkdir -p data/mihomo
+
+          # Ambil commit terbaru dari branch dev
+          COMMIT_JSON=$(curl -s "https://api.github.com/repos/$REPO/commits?per_page=1&sha=$BRANCH")
+
+          LATEST_COMMIT=$(echo "$COMMIT_JSON" | grep -oP '"sha": "\K[0-9a-f]+' | head -n1)
+          COMMIT_MSG=$(echo "$COMMIT_JSON" | grep -oP '"message": "\K[^"]+' | head -n1)
+          COMMIT_AUTHOR=$(echo "$COMMIT_JSON" | grep -oP '"name": "\K[^"]+' | head -n1)
+          COMMIT_DATE=$(echo "$COMMIT_JSON" | grep -oP '"date": "\K[^"]+' | head -n1)
+
+          if [ -z "$LATEST_COMMIT" ]; then
+            echo "⚠️ Gagal ambil commit dari $REPO"
+            exit 1
+          fi
+
+          if [ -f data/mihomo/last_commit.sha ]; then
+            OLD_COMMIT=$(cat data/mihomo/last_commit.sha)
+          else
+            OLD_COMMIT=""
+          fi
+
+          if [ "$LATEST_COMMIT" != "$OLD_COMMIT" ]; then
+            # Simpan commit terbaru
+            echo "$LATEST_COMMIT" > data/mihomo/last_commit.sha
+            git config user.name "github-actions"
+            git config user.email "actions@github.com"
+            git add data/mihomo/last_commit.sha
+            git commit -m "Update last_commit.sha ke $LATEST_COMMIT" --quiet || true
+            git pull --rebase --quiet || true
+            git push --quiet || true
+
+            # Kirim Notifikasi Commit ke Telegram
+            COMMIT_MSG=$(echo "$COMMIT_MSG" | sed 's/\&/\\&/g')
+            COMMIT_URL="https://github.com/$REPO/commit/$LATEST_COMMIT"
+            MSG="🆕 <b>Commit baru terdeteksi</b>
+            ═══════════════════════
+            📌 <b>Commit:</b> <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
+            📌 <b>Author:</b> $COMMIT_AUTHOR
+            📌 <b>Tanggal:</b> $COMMIT_DATE
+            ────────────────────────
+            💬 <b>Message:</b> $COMMIT_MSG"
+
+          else
+          # Versi baru terdeteksi → notif build dimulai
+            MSG="🆕 <b>tidak ada Commit baru</b>
+            ═══════════════════════
+            📌 <b>Commit lama:</b> <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
+            ═══════════════════════
+            💬 <b>Message:</b> $COMMIT_MSG"
+
+            curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+              -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+              -d text="$MSG" \
+              -d parse_mode="HTML" \
+              -d disable_web_page_preview=true
+          fi          
