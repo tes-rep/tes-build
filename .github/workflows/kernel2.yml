@@ -151,6 +151,9 @@ jobs:
           # Buat folder data untuk simpan info versi
           mkdir -p data/mihomo
 
+          # Konversi tanggal ke WIB
+          COMMIT_DATE_WIB=$(date -d "$COMMIT_DATE_RAW +7 hours" '+%d-%m-%Y %H:%M:%S WIB')
+
           # Ambil commit terbaru dari branch dev
           COMMIT_JSON=$(curl -s "https://api.github.com/repos/$REPO/commits?per_page=1&sha=$BRANCH")
 
@@ -187,7 +190,7 @@ jobs:
             ═══════════════════════
             📌 <b>Commit:</b> <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
             📌 <b>Author:</b> $COMMIT_AUTHOR
-            📌 <b>Tanggal:</b> $COMMIT_DATE
+            📌 <b>Tanggal:</b> $COMMIT_DATE_WIB
             ────────────────────────
             💬 <b>Message:</b> $COMMIT_MSG"
 
