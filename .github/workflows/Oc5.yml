@@ -45,7 +45,7 @@ jobs:
             git config user.name "github-actions"
             git config user.email "actions@github.com"
             git add "$LAST_VER_FILE"
-            git commit -m "Update last_version.txt ke $LATEST_VER" --quiet || true
+            git commit -m "Update "$LAST_VER_FILE" ke $LATEST_VER" --quiet || true
             git pull --rebase --quiet || true
             git push --quiet || true
             echo "skip_build=false" >> $GITHUB_OUTPUT
@@ -58,8 +58,8 @@ jobs:
           RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/$VER"
 
           # Ambil versi lama
-          if [ -f last_version.txt ]; then
-            OLD_VER=$(cat last_version.txt)
+          if [ -f "$LAST_VER_FILE" ]; then
+            OLD_VER=$(cat "$LAST_VER_FILE")
           else
             OLD_VER="tidak tersedia"
           fi
@@ -233,8 +233,8 @@ jobs:
           BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
 
           # Ambil versi lama
-          if [ -f last_version.txt ]; then
-            OLD_VER=$(cat last_version.txt)
+          if [ -f "$LAST_VER_FILE" ]; then
+            OLD_VER=$(cat "$LAST_VER_FILE")
           else
           OLD_VER="tidak tersedia"
           fi
