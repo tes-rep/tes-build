@@ -36,6 +36,7 @@ jobs:
             # Buat identifier unik per kernel
             NAME=$(echo $URL | grep -oP 'linux-\d+\.\d+\.y')
             FILE="$NAME.txt"
+            
 
             # Ambil konten Makefile
             CONTENT=$(curl -s $URL)
@@ -84,41 +85,6 @@ jobs:
               📌 <b>Versi terakhir:</b> v$LATEST_VER
               ═══════════════════════
               📌 <b>Link release:</b> <a href='$RELEASE_URL'>Klik di sini</a>"
-            fi
-
-            # === Cek Commit Terbaru ===
-            REPO=$(echo $URL | grep -oP 'unifreq/linux-[0-9]+\.[0-9]+\.y')
-            COMMIT_JSON=$(curl -s "https://api.github.com/repos/$REPO/commits?per_page=1")
-
-            LATEST_COMMIT=$(echo "$COMMIT_JSON" | grep -oP '"sha": "\K[0-9a-f]+' | head -n1)
-            COMMIT_MSG=$(echo "$COMMIT_JSON" | grep -oP '"message": "\K[^"]+' | head -n1)
-            COMMIT_AUTHOR=$(echo "$COMMIT_JSON" | grep -oP '"name": "\K[^"]+' | head -n1)
-            COMMIT_DATE=$(echo "$COMMIT_JSON" | grep -oP '"date": "\K[^"]+' | head -n1)
-
-            if [ -z "$LATEST_COMMIT" ]; then
-              echo "⚠️ Gagal ambil commit dari $REPO"
-              continue
-            fi
-
-            if [ -f $FILE_COMMIT ]; then
-              OLD_COMMIT=$(cat $FILE_COMMIT)
-            else
-              OLD_COMMIT="tidak ada"
-            fi
-
-            COMMIT_CHANGED=false
-            if [ "$LATEST_COMMIT" != "$OLD_COMMIT" ]; then
-              echo "$LATEST_COMMIT" > $FILE_COMMIT
-              git add $FILE_COMMIT
-              COMMIT_CHANGED=true
-              MSG="🆕 <b>Commit baru terdeteksi</b>
-              ═══════════════════════
-              📌 <b>Kernel:</b> $NAME
-              📌 <b>Commit:</b> <a href='https://github.com/$REPO/commit/$LATEST_COMMIT'>$LATEST_COMMIT</a>
-              📌 <b>Author:</b> $COMMIT_AUTHOR
-              📌 <b>Tanggal:</b> $COMMIT_DATE
-              ────────────────────────
-              💬 <b>Message:</b> $COMMIT_MSG"
             fi
 
             # Kirim notif ke semua chat_id unik
