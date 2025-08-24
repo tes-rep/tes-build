@@ -66,6 +66,13 @@ jobs:
             ────────────────────────
             💬 <b>Message:</b> $COMMIT_MSG"
 
+          else
+          # Versi baru terdeteksi → notif build dimulai
+            MSG="🆕 <b>tidak ada Commit baru</b>
+            ═══════════════════════
+            📌 <b>Commit lama:</b> <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
+            
+
             curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
               -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
               -d text="$MSG" \
