@@ -199,6 +199,8 @@ jobs:
             MSG="🆕 <b>mihomo tidak ada Commit baru</b>
             ═══════════════════════
             📌 <b>Commit lama:</b> <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
+            📌 <b>Author:</b> $COMMIT_AUTHOR
+            📌 <b>Tanggal:</b> $COMMIT_DATE_WIB
             ═══════════════════════
             💬 <b>Message:</b> $COMMIT_MSG"
 
