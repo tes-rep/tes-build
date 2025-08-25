@@ -125,7 +125,10 @@ jobs:
               COMMIT_MSG=$(echo "$COMMIT_MSG" | sed 's/\&/\\&/g')
               MSG="ℹ️ <b>$NAME tidak ada commit baru</b>
               ═══════════════════════
+              📌 <b>Kernel:</b> $NAME
               📌 <b>Commit terakhir:</b> <a href='https://github.com/$REPO/commit/$LATEST_COMMIT'>$LATEST_COMMIT</a>
+              📌 <b>Author:</b> $COMMIT_AUTHOR
+              📌 <b>Tanggal:</b> $COMMIT_DATE_WIB
               ═══════════════════════
               💬 <b>Message:</b> $COMMIT_MSG"
             fi
