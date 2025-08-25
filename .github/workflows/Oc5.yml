@@ -94,12 +94,14 @@ jobs:
           LATEST_VER=$(curl -s https://raw.githubusercontent.com/vernesong/OpenClash/dev/luci-app-openclash/Makefile | grep -oP '(?<=PKG_VERSION:=)[0-9\.]+')
           echo "latest_ver=$LATEST_VER" >> $GITHUB_OUTPUT
           echo "Versi terbaru: $LATEST_VER"
-
+          
+           # Baca versi lama
           if [ -f "$LAST_VER_FILE" ]; then
             LAST_VER=$(cat "$LAST_VER_FILE")
           else
             LAST_VER=""
           fi
+          echo "last_ver=$LAST_VER" >> $GITHUB_OUTPUT
 
           if [ "$LAST_VER" = "$LATEST_VER" ]; then
             echo "skip_build=true" >> $GITHUB_OUTPUT
@@ -119,13 +121,8 @@ jobs:
           VER="v${{ steps.setvar.outputs.latest_ver }}"
           BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
           RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/$VER"
-
-          # Ambil versi lama
-          if [ -f "$LAST_VER_FILE" ]; then
-            OLD_VER=$(cat "$LAST_VER_FILE")
-          else
-            OLD_VER="tidak tersedia"
-          fi
+          OLD_VER="${{ steps.setvar.outputs.last_ver }}"
+          
 
           if [[ "${{ steps.setvar.outputs.skip_build }}" == "true" ]]; then
           # Versi sama dengan terakhir
