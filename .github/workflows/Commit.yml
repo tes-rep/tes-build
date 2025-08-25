@@ -132,8 +132,8 @@ jobs:
             STATUS="🆕 Commit baru terdeteksi"
           fi
 
-          MSG=$(printf "🖥️ Status Mihomo (%s)\n═══════════════════════\n%s\n📌 Commit: <a href='%s'>%s</a>\n📌 Author: %s\n📌 Tanggal: %s\n💬 Message: %s" \
-                "$BRANCH" "$STATUS" "$COMMIT_URL" "$LATEST_COMMIT" "$COMMIT_AUTHOR" "$COMMIT_DATE_WIB" "$COMMIT_MSG")
+          MSG=$(printf "🖥️ Status Mihomo (%s)\n═══════════════════════\n%s\n📌 Commit: %s\n📌 Author: %s\n📌 Tanggal: %s\n═══════════════════════\n💬 Message: %s" \
+          "$BRANCH" "$STATUS" "$LATEST_COMMIT" "$COMMIT_AUTHOR" "$COMMIT_DATE_WIB" "$COMMIT_MSG")
 
           for CHAT_ID in $(echo "${{ secrets.TELEGRAM_CHAT_ID }}" | tr ',' '\n'); do
             curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
