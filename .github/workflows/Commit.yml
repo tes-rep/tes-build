@@ -15,44 +15,36 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
-      # ========================================
-      # Kernel Linux - Cek versi & commit
-      # ========================================
       - name: Cek versi & commit kernel
         shell: bash
         run: |
+          set -e
           mkdir -p data/kernel
-          KERNELS=("linux-6.6.y" "linux-6.12.y")
+          URLS=("https://raw.githubusercontent.com/unifreq/linux-6.12.y/main/Makefile"
+                "https://raw.githubusercontent.com/unifreq/linux-6.6.y/main/Makefile")
           CHAT_IDS=($(echo "${{ secrets.TELEGRAM_CHAT_ID }}" | tr ',' '\n' | sort -u))
           RELEASE_URL="https://github.com/tes-rep/kernel/releases"
 
-          for URL in "https://raw.githubusercontent.com/unifreq/linux-6.12.y/main/Makefile" "https://raw.githubusercontent.com/unifreq/linux-6.6.y/main/Makefile"; do
+          for URL in "${URLS[@]}"; do
             NAME=$(echo $URL | grep -oP 'linux-\d+\.\d+\.y')
             FILE_VER="data/kernel/$NAME.txt"
             FILE_COMMIT="data/kernel/$NAME.commit"
             REPO=$(echo $URL | grep -oP 'unifreq/linux-[0-9]+\.[0-9]+\.y')
 
-            # ===== Versi kernel =====
+            # Ambil versi
             CONTENT=$(curl -s $URL)
             VERSION=$(echo "$CONTENT" | grep -oP '(?<=VERSION = )\d+')
             PATCHLEVEL=$(echo "$CONTENT" | grep -oP '(?<=PATCHLEVEL = )\d+')
             SUBLEVEL=$(echo "$CONTENT" | grep -oP '(?<=SUBLEVEL = )\d+')
             LATEST_VER="$VERSION.$PATCHLEVEL.$SUBLEVEL"
 
-            if [ -f $FILE_VER ]; then
-              OLD_VER=$(cat $FILE_VER)
+            if [ -f "$FILE_VER" ]; then
+              OLD_VER=$(cat "$FILE_VER")
             else
               OLD_VER="tidak tersedia"
             fi
 
-            if [ "$LATEST_VER" != "$OLD_VER" ]; then
-              echo "$LATEST_VER" > $FILE_VER
-              VER_STATUS="⚡ Versi baru: v$LATEST_VER\n📌 Versi lama: $OLD_VER"
-            else
-              VER_STATUS="ℹ️ Tidak ada versi baru ($LATEST_VER)"
-            fi
-
-            # ===== Commit kernel =====
+            # Ambil commit terakhir
             COMMIT_JSON=$(curl -s "https://api.github.com/repos/$REPO/commits?per_page=1")
             COMMIT_SHA=$(echo "$COMMIT_JSON" | jq -r '.[0].sha')
             COMMIT_MSG=$(echo "$COMMIT_JSON" | jq -r '.[0].commit.message')
@@ -61,37 +53,50 @@ jobs:
             COMMIT_DATE_WIB=$(TZ="Asia/Jakarta" date -d "$COMMIT_DATE" '+%d-%m-%Y %H:%M:%S WIB')
             COMMIT_URL="https://github.com/$REPO/commit/$COMMIT_SHA"
 
-            if [ -f $FILE_COMMIT ]; then
-              OLD_COMMIT=$(cat $FILE_COMMIT)
+            if [ -f "$FILE_COMMIT" ]; then
+              OLD_COMMIT=$(cat "$FILE_COMMIT")
             else
               OLD_COMMIT=""
             fi
 
-            if [ "$COMMIT_SHA" != "$OLD_COMMIT" ]; then
-              echo "$COMMIT_SHA" > $FILE_COMMIT
-              COMMIT_STATUS="🆕 Commit baru\n📌 $COMMIT_SHA\n📌 $COMMIT_AUTHOR\n📌 $COMMIT_DATE_WIB\n💬 $COMMIT_MSG"
-            else
-              COMMIT_STATUS="ℹ️ Tidak ada commit baru\n📌 $COMMIT_SHA\n📌 $COMMIT_AUTHOR\n📌 $COMMIT_DATE_WIB\n💬 $COMMIT_MSG"
+            # Update file versi & commit
+            echo "$LATEST_VER" > "$FILE_VER"
+            echo "$COMMIT_SHA" > "$FILE_COMMIT"
+
+            # Build status pesan
+            VER_STATUS="Versi: $LATEST_VER (sebelumnya: $OLD_VER)"
+            if [ "$LATEST_VER" = "$OLD_VER" ]; then
+              VER_STATUS="ℹ️ Tidak ada versi baru ($LATEST_VER)"
             fi
 
-            # ===== Gabung Notifikasi =====
-            MSG="🖥️ Status Kernel <b>$NAME</b>
+            COMMIT_STATUS="Commit: <a href='$COMMIT_URL'>$COMMIT_SHA</a>\nAuthor: $COMMIT_AUTHOR\nTanggal: $COMMIT_DATE_WIB\nMessage: $COMMIT_MSG"
+            if [ "$COMMIT_SHA" = "$OLD_COMMIT" ]; then
+              COMMIT_STATUS="ℹ️ Tidak ada commit baru ($COMMIT_SHA)"
+            fi
+
+            # Gabung pesan
+            MSG=$(cat <<EOF
+            🖥️ Status Kernel <b>$NAME</b>
             ═══════════════════════
             $VER_STATUS
             $COMMIT_STATUS
             ═══════════════════════
-            🔗 <a href=\"$RELEASE_URL\">Release</a>"
+            🔗 <a href="$RELEASE_URL">Release</a>
+            EOF
+            )
 
+            # Kirim ke semua chat ID
             for CHAT_ID in "${CHAT_IDS[@]}"; do
               curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
                 -d chat_id="$CHAT_ID" \
                 -d text="$MSG" \
                 -d parse_mode="HTML" \
                 -d disable_web_page_preview=true
-              done
             done
+          done
 
       - name: Commit perubahan kernel
+        shell: bash
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
@@ -100,12 +105,10 @@ jobs:
           git pull --rebase --quiet || true
           git push --quiet || true
 
-      # ========================================
-      # Mihomo - Cek commit terbaru
-      # ========================================
       - name: Cek commit terbaru Mihomo
         shell: bash
         run: |
+          set -e
           mkdir -p data/mihomo
           REPO="vernesong/mihomo"
           BRANCH="Alpha"
@@ -119,27 +122,30 @@ jobs:
           COMMIT_DATE_WIB=$(TZ="Asia/Jakarta" date -d "$COMMIT_DATE" '+%d-%m-%Y %H:%M:%S WIB')
           COMMIT_URL="https://github.com/$REPO/commit/$LATEST_COMMIT"
 
-          if [ -f $LAST_COMMIT_FILE ]; then
-            OLD_COMMIT=$(cat $LAST_COMMIT_FILE)
+          if [ -f "$LAST_COMMIT_FILE" ]; then
+            OLD_COMMIT=$(cat "$LAST_COMMIT_FILE")
           else
             OLD_COMMIT=""
           fi
 
-          if [ "$LATEST_COMMIT" != "$OLD_COMMIT" ]; then
-            echo "$LATEST_COMMIT" > $LAST_COMMIT_FILE
-            STATUS="🆕 Commit baru terdeteksi"
-          else
+          echo "$LATEST_COMMIT" > "$LAST_COMMIT_FILE"
+
+          if [ "$LATEST_COMMIT" = "$OLD_COMMIT" ]; then
             STATUS="ℹ️ Tidak ada commit baru"
+          else
+            STATUS="🆕 Commit baru terdeteksi"
           fi
 
-          MSG="🖥️ Status Mihomo ($BRANCH)
+          MSG=$(cat <<EOF
+          🖥️ Status Mihomo ($BRANCH)
           ═══════════════════════
           $STATUS
           📌 Commit: <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
           📌 Author: $COMMIT_AUTHOR
           📌 Tanggal: $COMMIT_DATE_WIB
-          ═══════════════════════
-          💬 Message: $COMMIT_MSG"
+          💬 Message: $COMMIT_MSG
+          EOF
+          )
 
           for CHAT_ID in $(echo "${{ secrets.TELEGRAM_CHAT_ID }}" | tr ',' '\n'); do
             curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
@@ -150,6 +156,7 @@ jobs:
           done
 
       - name: Commit perubahan Mihomo
+        shell: bash
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
