@@ -73,7 +73,9 @@ jobs:
 
           else
           # Versi baru terdeteksi → notif build dimulai
-            MSG="🆕 <b>tidak ada Commit baru</b>
+            COMMIT_MSG=$(echo "$COMMIT_MSG" | sed 's/\&/\\&/g')
+            COMMIT_URL="https://github.com/$REPO/commit/$LATEST_COMMIT"
+            MSG="🆕 <b>openClash tidak ada Commit baru</b>
             ═══════════════════════
             📌 <b>Commit lama:</b> <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
             ═══════════════════════
