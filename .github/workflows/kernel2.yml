@@ -158,8 +158,11 @@ jobs:
           # Buat folder data untuk simpan info versi
           mkdir -p data/mihomo
 
-          # Konversi tanggal ke WIB
-          COMMIT_DATE_WIB=$(date -d "$COMMIT_DATE_RAW +7 hours" '+%d-%m-%Y %H:%M:%S WIB')
+          # Ambil commit date dari API GitHub
+          COMMIT_DATE=$(echo "$COMMIT_JSON" | jq -r '.[0].commit.committer.date')
+
+          # Konversi ke WIB
+          COMMIT_DATE_WIB=$(TZ="Asia/Jakarta" date -d "$COMMIT_DATE" '+%d-%m-%Y %H:%M:%S WIB')
 
           # Ambil commit terbaru dari branch dev
           COMMIT_JSON=$(curl -s "https://api.github.com/repos/$REPO/commits?per_page=1&sha=$BRANCH")
@@ -167,7 +170,7 @@ jobs:
           LATEST_COMMIT=$(echo "$COMMIT_JSON" | grep -oP '"sha": "\K[0-9a-f]+' | head -n1)
           COMMIT_MSG=$(echo "$COMMIT_JSON" | grep -oP '"message": "\K[^"]+' | head -n1)
           COMMIT_AUTHOR=$(echo "$COMMIT_JSON" | grep -oP '"name": "\K[^"]+' | head -n1)
-          COMMIT_DATE=$(echo "$COMMIT_JSON" | grep -oP '"date": "\K[^"]+' | head -n1)
+          # COMMIT_DATE=$(echo "$COMMIT_JSON" | grep -oP '"date": "\K[^"]+' | head -n1)
           COMMIT_URL="https://github.com/$REPO/commit/$LATEST_COMMIT"
 
           if [ -z "$LATEST_COMMIT" ]; then
