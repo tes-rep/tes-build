@@ -74,7 +74,7 @@ jobs:
               COMMIT_STATUS="ℹ️ Tidak ada commit baru ($COMMIT_SHA)"
             fi
 
-            # Gabung pesan
+            
             MSG=$(cat <<EOF
             🖥️ Status Kernel <b>$NAME</b>
             ═══════════════════════
