@@ -202,6 +202,7 @@ jobs:
 
           else
           # Versi baru terdeteksi → notif build dimulai
+            COMMIT_MSG=$(echo "$COMMIT_MSG" | sed 's/\&/\\&/g')
             MSG="🆕 <b>mihomo tidak ada Commit baru</b>
             ═══════════════════════
             📌 <b>Commit lama:</b> <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
