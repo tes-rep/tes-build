@@ -132,7 +132,7 @@ jobs:
           VER="v${{ steps.setvar.outputs.latest_ver }}"
           BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
           RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/$VER"
-          OLD_VER="${{ steps.setvar.outputs.last_ver }}"
+          OLD_VER="v${{ steps.setvar.outputs.last_ver }}"
           
 
           if [[ "${{ steps.setvar.outputs.skip_build }}" == "true" ]]; then
@@ -301,10 +301,10 @@ jobs:
           MIN=$((DURATION / 60))
           SEC=$((DURATION % 60))
 
-          VER="${{ needs.check-version.outputs.latest_ver }}"
+          VER="v${{ needs.check-version.outputs.latest_ver }}"
           RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/v$VER"
           BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
-          OLD_VER="${{ needs.check-version.outputs.last_ver }}"
+          OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
 
           IPK_FILE="luci-app-openclash_${VER}_all.ipk"
           APK_FILE="luci-app-openclash-${VER}.apk"
