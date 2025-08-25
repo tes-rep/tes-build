@@ -96,7 +96,6 @@ jobs:
       - name: Cek versi terbaru
         id: setvar
         run: |
-
           # Buat folder data untuk simpan info versi
           mkdir -p data/openclash
 
