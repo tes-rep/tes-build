@@ -83,7 +83,7 @@ jobs:
             ═══════════════════════
             🔗 <a href="$RELEASE_URL">Release</a>
             EOF
-            )
+          )
 
             # Kirim ke semua chat ID
             for CHAT_ID in "${CHAT_IDS[@]}"; do
