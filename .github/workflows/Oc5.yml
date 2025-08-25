@@ -22,6 +22,9 @@ jobs:
       - name: Cek Commit Terbaru
         id: commit-check
         run: |
+          # Buat folder penyimpanan commit
+          mkdir -p data/openclash
+        
           # Ambil commit terbaru
           REPO="vernesong/OpenClash"
           BRANCH="dev"
