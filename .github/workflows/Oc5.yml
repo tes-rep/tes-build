@@ -3,7 +3,7 @@ name: Build luci-app-openclash ke tes-rep5
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */6 * * *'
+    - cron: '0 */3 * * *'
 
 jobs:
   check-version:
@@ -111,9 +111,10 @@ jobs:
           if [ -f "$LAST_VER_FILE" ]; then
             LAST_VER=$(cat "$LAST_VER_FILE")
           else
-            LAST_VER=""
+            LAST_VER="$LATEST_VER"
           fi
           echo "last_ver=$LAST_VER" >> $GITHUB_OUTPUT
+          echo "Versi lama: $LAST_VER"
 
           if [ "$LAST_VER" = "$LATEST_VER" ]; then
             echo "skip_build=true" >> $GITHUB_OUTPUT
@@ -302,10 +303,10 @@ jobs:
           MIN=$((DURATION / 60))
           SEC=$((DURATION % 60))
 
-          VER="${{ needs.check-version.outputs.latest_ver }}"
+          VER="v${{ needs.check-version.outputs.latest_ver }}"
           RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/v$VER"
           BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
-          OLD_VER="${{ needs.check-version.outputs.last_ver }}"
+          OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
 
           IPK_FILE="luci-app-openclash_${VER}_all.ipk"
           APK_FILE="luci-app-openclash-${VER}.apk"
