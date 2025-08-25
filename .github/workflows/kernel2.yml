@@ -93,15 +93,14 @@ jobs:
             FILE_COMMIT="data/kernel/$NAME.commit"
             REPO=$(echo $URL | grep -oP 'unifreq/linux-[0-9]+\.[0-9]+\.y')
 
+            # Ambil commit terakhir
             COMMIT_JSON=$(curl -s "https://api.github.com/repos/$REPO/commits?per_page=1")
-            LATEST_COMMIT=$(echo "$COMMIT_JSON" | grep -oP '"sha": "\K[0-9a-f]+' | head -n1)
-            COMMIT_MSG=$(echo "$COMMIT_JSON" | grep -oP '"message": "\K[^"]+' | head -n1)
-            COMMIT_AUTHOR=$(echo "$COMMIT_JSON" | grep -oP '"name": "\K[^"]+' | head -n1)
-            # Ambil commit date dari API GitHub
+            COMMIT_SHA=$(echo "$COMMIT_JSON" | jq -r '.[0].sha')
+            COMMIT_MSG=$(echo "$COMMIT_JSON" | jq -r '.[0].commit.message')
+            COMMIT_AUTHOR=$(echo "$COMMIT_JSON" | jq -r '.[0].commit.committer.name')
             COMMIT_DATE=$(echo "$COMMIT_JSON" | jq -r '.[0].commit.committer.date')
-
-            # Konversi ke WIB
             COMMIT_DATE_WIB=$(TZ="Asia/Jakarta" date -d "$COMMIT_DATE" '+%d-%m-%Y %H:%M:%S WIB')
+            COMMIT_URL="https://github.com/$REPO/commit/$COMMIT_SHA"
 
 
             if [ -f $FILE_COMMIT ]; then
@@ -191,7 +190,6 @@ jobs:
             git push --quiet || true
 
             # Kirim Notifikasi Commit ke Telegram
-            COMMIT_MSG=$(echo "$COMMIT_MSG" | sed 's/\&/\\&/g')
             MSG="🆕 <b>mihomo Commit baru terdeteksi</b>
             ═══════════════════════
             📌 <b>Commit:</b> <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
