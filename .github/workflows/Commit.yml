@@ -20,7 +20,7 @@ jobs:
         run: |
           set -e
           mkdir -p data/kernel
-          URLS=("https://raw.githubusercontent.com/unifreq/linux-6.12.y/main/Makefile"
+          URLS=("https://raw.githubusercontent.com/unifreq/linux-6.12.y/main/Makefile" \
                 "https://raw.githubusercontent.com/unifreq/linux-6.6.y/main/Makefile")
           CHAT_IDS=($(echo "${{ secrets.TELEGRAM_CHAT_ID }}" | tr ',' '\n' | sort -u))
           RELEASE_URL="https://github.com/tes-rep/kernel/releases"
@@ -64,26 +64,22 @@ jobs:
             echo "$COMMIT_SHA" > "$FILE_COMMIT"
 
             # Build status pesan
-            VER_STATUS="Versi: $LATEST_VER (sebelumnya: $OLD_VER)"
             if [ "$LATEST_VER" = "$OLD_VER" ]; then
               VER_STATUS="ℹ️ Tidak ada versi baru ($LATEST_VER)"
+            else
+              VER_STATUS="Versi baru: $LATEST_VER (sebelumnya: $OLD_VER)"
             fi
 
-            COMMIT_STATUS="Commit: <a href='$COMMIT_URL'>$COMMIT_SHA</a>\nAuthor: $COMMIT_AUTHOR\nTanggal: $COMMIT_DATE_WIB\nMessage: $COMMIT_MSG"
             if [ "$COMMIT_SHA" = "$OLD_COMMIT" ]; then
               COMMIT_STATUS="ℹ️ Tidak ada commit baru ($COMMIT_SHA)"
+            else
+              COMMIT_STATUS=$(printf "Commit: <a href='%s'>%s</a>\nAuthor: %s\nTanggal: %s\nMessage: %s" \
+                              "$COMMIT_URL" "$COMMIT_SHA" "$COMMIT_AUTHOR" "$COMMIT_DATE_WIB" "$COMMIT_MSG")
             fi
 
-            
-                                   MSG=$(cat <<EOF
-            🖥️ Status Kernel <b>$NAME</b>
-            ═══════════════════════
-            $VER_STATUS
-            $COMMIT_STATUS
-            ═══════════════════════
-            🔗 <a href="$RELEASE_URL">Release</a>
-            EOF
-            )
+            # Buat pesan Telegram pakai printf
+            MSG=$(printf "🖥️ Status Kernel <b>%s</b>\n═══════════════════════\n%s\n%s\n═══════════════════════\n🔗 <a href=\"%s\">Release</a>" \
+                  "$NAME" "$VER_STATUS" "$COMMIT_STATUS" "$RELEASE_URL")
 
             # Kirim ke semua chat ID
             for CHAT_ID in "${CHAT_IDS[@]}"; do
@@ -136,16 +132,8 @@ jobs:
             STATUS="🆕 Commit baru terdeteksi"
           fi
 
-          MSG=$(cat <<EOF
-          🖥️ Status Mihomo ($BRANCH)
-          ═══════════════════════
-          $STATUS
-          📌 Commit: <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
-          📌 Author: $COMMIT_AUTHOR
-          📌 Tanggal: $COMMIT_DATE_WIB
-          💬 Message: $COMMIT_MSG
-          EOF
-          )
+          MSG=$(printf "🖥️ Status Mihomo (%s)\n═══════════════════════\n%s\n📌 Commit: <a href='%s'>%s</a>\n📌 Author: %s\n📌 Tanggal: %s\n💬 Message: %s" \
+                "$BRANCH" "$STATUS" "$COMMIT_URL" "$LATEST_COMMIT" "$COMMIT_AUTHOR" "$COMMIT_DATE_WIB" "$COMMIT_MSG")
 
           for CHAT_ID in $(echo "${{ secrets.TELEGRAM_CHAT_ID }}" | tr ',' '\n'); do
             curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
