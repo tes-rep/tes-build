@@ -11,6 +11,7 @@ jobs:
     outputs:
       skip_build: ${{ steps.setvar.outputs.skip_build }}
       latest_ver: ${{ steps.setvar.outputs.latest_ver }}
+      last_ver: ${{ steps.setvar.outputs.last_ver }}
     steps:
       - name: Checkout repo build
         uses: actions/checkout@v4
@@ -301,10 +302,10 @@ jobs:
           MIN=$((DURATION / 60))
           SEC=$((DURATION % 60))
 
-          VER="v${{ needs.check-version.outputs.latest_ver }}"
+          VER="${{ needs.check-version.outputs.latest_ver }}"
           RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/v$VER"
           BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
-          OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
+          OLD_VER="${{ needs.check-version.outputs.last_ver }}"
 
           IPK_FILE="luci-app-openclash_${VER}_all.ipk"
           APK_FILE="luci-app-openclash-${VER}.apk"
