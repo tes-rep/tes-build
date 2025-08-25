@@ -293,13 +293,7 @@ jobs:
           VER="${{ needs.check-version.outputs.latest_ver }}"
           RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/v$VER"
           BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
-
-          # Ambil versi lama
-          if [ -f "$LAST_VER_FILE" ]; then
-            OLD_VER=$(cat "$LAST_VER_FILE")
-          else
-          OLD_VER="tidak tersedia"
-          fi
+          OLD_VER="${{ steps.setvar.outputs.last_ver }}"
 
           IPK_FILE="luci-app-openclash_${VER}_all.ipk"
           APK_FILE="luci-app-openclash-${VER}.apk"
