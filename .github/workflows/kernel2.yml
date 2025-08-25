@@ -87,8 +87,6 @@ jobs:
           mkdir -p data/kernel
           CHAT_IDS=($(echo "${{ secrets.TELEGRAM_CHAT_ID }}" | tr ',' '\n' | sort -u))
 
-          # Konversi tanggal ke WIB
-          COMMIT_DATE_WIB=$(date -d "$COMMIT_DATE_RAW +7 hours" '+%d-%m-%Y %H:%M:%S WIB')
 
           for URL in "${URLS[@]}"; do
             NAME=$(echo $URL | grep -oP 'linux-\d+\.\d+\.y')
@@ -99,7 +97,12 @@ jobs:
             LATEST_COMMIT=$(echo "$COMMIT_JSON" | grep -oP '"sha": "\K[0-9a-f]+' | head -n1)
             COMMIT_MSG=$(echo "$COMMIT_JSON" | grep -oP '"message": "\K[^"]+' | head -n1)
             COMMIT_AUTHOR=$(echo "$COMMIT_JSON" | grep -oP '"name": "\K[^"]+' | head -n1)
-            COMMIT_DATE=$(echo "$COMMIT_JSON" | grep -oP '"date": "\K[^"]+' | head -n1)
+            # Ambil commit date dari API GitHub
+            COMMIT_DATE=$(echo "$COMMIT_JSON" | jq -r '.[0].commit.committer.date')
+
+            # Konversi ke WIB
+            COMMIT_DATE_WIB=$(TZ="Asia/Jakarta" date -d "$COMMIT_DATE" '+%d-%m-%Y %H:%M:%S WIB')
+
 
             if [ -f $FILE_COMMIT ]; then
               OLD_COMMIT=$(cat $FILE_COMMIT)
