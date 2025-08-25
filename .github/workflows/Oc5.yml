@@ -302,7 +302,7 @@ jobs:
           VER="${{ needs.check-version.outputs.latest_ver }}"
           RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/v$VER"
           BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
-          OLD_VER="${{ steps.setvar.outputs.last_ver }}"
+          OLD_VER="${{ needs.check-version.outputs.last_ver }}"
 
           IPK_FILE="luci-app-openclash_${VER}_all.ipk"
           APK_FILE="luci-app-openclash-${VER}.apk"
