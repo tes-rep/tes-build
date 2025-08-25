@@ -72,14 +72,14 @@ jobs:
             ═══════════════════════
             📌 <b>Commit lama:</b> <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
             ═══════════════════════
-            💬 <b>Message:</b> $COMMIT_MSG"
-
+            💬 <b>Message:</b> $COMMIT_MSG
+          fi
             curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
               -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
               -d text="$MSG" \
               -d parse_mode="HTML" \
               -d disable_web_page_preview=true
-          fi       
+               
 
       - name: Cek versi terbaru
         id: setvar
