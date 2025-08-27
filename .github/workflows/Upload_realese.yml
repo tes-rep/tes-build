@@ -85,7 +85,7 @@ jobs:
         run: |
           TAG="${{ github.event.inputs.folder }}"
           echo "TAG=$TAG" >> $GITHUB_ENV
-          echo "RELEASE_NAME=Release $TAG" >> $GITHUB_ENV
+          echo "RELEASE_NAME=$TAG" >> $GITHUB_ENV
 
       - name: Create Release (repo ini)
         if: ${{ github.event.inputs.target == 'release' && github.event.inputs.repo_target == 'self' }}
