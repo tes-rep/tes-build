@@ -1,4 +1,4 @@
-name: Build luci-app-openclash ke tes-rep5
+name: Build luci-app-openclash ke tes-rep6
 
 on:
   workflow_dispatch:
