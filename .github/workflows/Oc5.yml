@@ -68,12 +68,12 @@ jobs:
             COMMIT_MSG=$(echo "$COMMIT_MSG" | sed 's/\&/\\&/g')
             COMMIT_URL="https://github.com/$REPO/commit/$LATEST_COMMIT"
             MSG="🆕 <b>Commit baru terdeteksi</b>
-            क═══════क⊹⊱✫⊰⊹क═══════क
-            📌 <b>Commit:</b> <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
-            📌 <b>Author:</b> $COMMIT_AUTHOR
-            📌 <b>Tanggal:</b> $COMMIT_DATE_WIB
-            क═══════क⊹⊱✫⊰⊹क═══════क
-            💬 <b>Message:</b> $COMMIT_MSG"
+               क═══════क⊹⊱✫⊰⊹क═══════क
+              📌 <b>Commit:</b> <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
+              📌 <b>Author:</b> $COMMIT_AUTHOR
+              📌 <b>Tanggal:</b> $COMMIT_DATE_WIB
+              क═══════क⊹⊱✫⊰⊹क═══════क
+              💬 <b>Message:</b> $COMMIT_MSG"
 
           else
           # Versi baru terdeteksi → notif build dimulai
