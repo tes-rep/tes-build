@@ -1,0 +1,108 @@
+name: Download & Upload (Release / Repo - Self / Other)
+
+on:
+  workflow_dispatch:
+    inputs:
+      file_url:
+        description: 'Masukkan URL file untuk di-download'
+        required: true
+        default: 'https://example.com/path/to/file.zip'
+      target:
+        description: 'Pilih target upload: release / repo'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - release
+          - repo
+      repo_target:
+        description: 'Repo tujuan: self / other'
+        required: true
+        default: 'self'
+        type: choice
+        options:
+          - self
+          - other
+      target_repo:
+        description: 'Repo tujuan kalau pilih other (format: owner/repo)'
+        required: false
+        default: 'username/target-repo'
+      branch:
+        description: 'Branch tujuan (kalau pilih repo)'
+        required: false
+        default: 'main'
+      folder:
+        description: 'Nama folder di repo (kalau pilih repo)'
+        required: false
+        default: 'downloads'
+
+jobs:
+  download-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download file dari URL
+        run: |
+          curl -L "${{ github.event.inputs.file_url }}" -o downloaded_file
+          echo "FILE_PATH=downloaded_file" >> $GITHUB_ENV
+
+      # === Release di repo ini ===
+      - name: Set Release Tag
+        if: ${{ github.event.inputs.target == 'release' && github.event.inputs.repo_target == 'self' }}
+        run: |
+          TAG="manual-release-$(date +'%Y%m%d-%H%M%S')"
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "RELEASE_NAME=Release $TAG" >> $GITHUB_ENV
+
+      - name: Create Release (repo ini)
+        if: ${{ github.event.inputs.target == 'release' && github.event.inputs.repo_target == 'self' }}
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.TAG }}
+          name: ${{ env.RELEASE_NAME }}
+          files: ${{ env.FILE_PATH }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # === Release di repo lain ===
+      - name: Create Release (repo lain)
+        if: ${{ github.event.inputs.target == 'release' && github.event.inputs.repo_target == 'other' }}
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          TAG="manual-release-$(date +'%Y%m%d-%H%M%S')"
+          RELEASE_NAME="Release $TAG"
+
+          gh release create "$TAG" "${{ env.FILE_PATH }}" \
+            --repo "${{ github.event.inputs.target_repo }}" \
+            --title "$RELEASE_NAME" \
+            --notes "Automatic release from workflow"
+
+      # === Commit ke repo ini ===
+      - name: Commit file ke repo ini
+        if: ${{ github.event.inputs.target == 'repo' && github.event.inputs.repo_target == 'self' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p "${{ github.event.inputs.folder }}"
+          mv "${{ env.FILE_PATH }}" "${{ github.event.inputs.folder }}/"
+          git add "${{ github.event.inputs.folder }}/"
+          git commit -m "Add file from URL ${{ github.event.inputs.file_url }} to ${{ github.event.inputs.folder }}/"
+          git push origin "${{ github.event.inputs.branch }}"
+
+      # === Commit ke repo lain ===
+      - name: Commit file ke repo lain
+        if: ${{ github.event.inputs.target == 'repo' && github.event.inputs.repo_target == 'other' }}
+        run: |
+          git clone https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ github.event.inputs.target_repo }} target-repo
+          cd target-repo
+          git checkout "${{ github.event.inputs.branch }}" || git checkout -b "${{ github.event.inputs.branch }}"
+          mkdir -p "${{ github.event.inputs.folder }}"
+          mv ../"${{ env.FILE_PATH }}" "${{ github.event.inputs.folder }}/"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "${{ github.event.inputs.folder }}/"
+          git commit -m "Add file from URL ${{ github.event.inputs.file_url }} to ${{ github.event.inputs.folder }}/"
+          git push origin "${{ github.event.inputs.branch }}"
