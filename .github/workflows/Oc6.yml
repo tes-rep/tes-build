@@ -12,6 +12,8 @@ jobs:
       skip_build: ${{ steps.setvar.outputs.skip_build }}
       latest_ver: ${{ steps.setvar.outputs.latest_ver }}
       last_ver: ${{ steps.setvar.outputs.last_ver }}
+      commit_msg: ${{ steps.commit-check.outputs.commit_msg }}
+      latest_commit: ${{ steps.commit-check.outputs.latest_commit }}
     steps:
       - name: Checkout repo build
         uses: actions/checkout@v4
@@ -47,6 +49,10 @@ jobs:
             echo "⚠️ Gagal ambil commit dari $REPO"
             exit 1
           fi
+
+          # Simpan commit message dan sha sebagai output
+          echo "commit_msg=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          echo "latest_commit=$LATEST_COMMIT" >> $GITHUB_OUTPUT
 
           if [ -f data/openclash/last_commit.sha ]; then
             OLD_COMMIT=$(cat data/openclash/last_commit.sha)
@@ -291,6 +297,7 @@ jobs:
             **Changelog:**
             - Update versi terbaru dari vernesong/dev
             - **Full Changelog**: https://github.com/vernesong/OpenClash/commits/dev/
+            - Commit terakhir: ${{ needs.check-version.outputs.commit_msg }}
             - Build IPK & APK
           files: release/*
           prerelease: true
