@@ -172,19 +172,8 @@ jobs:
             -d parse_mode="HTML" \
             -d disable_web_page_preview=true
 
-           
-
-
-  build:
-    needs: check-version
-    if: needs.check-version.outputs.skip_release == 'false'
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target: [ipk, apk]
-
-    steps:
       - name: notif build
+        if: steps.commit-check.outputs.skip_release == 'false'
         run: |
           VER="v${{ needs.check-version.outputs.latest_ver }}"
           RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/$VER"
@@ -200,7 +189,18 @@ jobs:
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
             -d text="$MSG" \
             -d parse_mode="HTML" \
-            -d disable_web_page_preview=true
+            -d disable_web_page_preview=true   
+
+
+  build:
+    needs: check-version
+    if: needs.check-version.outputs.skip_release == 'false'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [ipk, apk]
+
+    steps:
       - name: Catat waktu mulai
         run: |
           echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
