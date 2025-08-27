@@ -68,11 +68,11 @@ jobs:
             COMMIT_MSG=$(echo "$COMMIT_MSG" | sed 's/\&/\\&/g')
             COMMIT_URL="https://github.com/$REPO/commit/$LATEST_COMMIT"
             MSG="🆕 <b>Commit baru terdeteksi</b>
-            ═══════════════════════
+            क═══════क⊹⊱✫⊰⊹क═══════क
             📌 <b>Commit:</b> <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
             📌 <b>Author:</b> $COMMIT_AUTHOR
             📌 <b>Tanggal:</b> $COMMIT_DATE_WIB
-            ────────────────────────
+            क═══════क⊹⊱✫⊰⊹क═══════क
             💬 <b>Message:</b> $COMMIT_MSG"
 
           else
@@ -80,11 +80,11 @@ jobs:
             COMMIT_MSG=$(echo "$COMMIT_MSG" | sed 's/\&/\\&/g')
             COMMIT_URL="https://github.com/$REPO/commit/$LATEST_COMMIT"
             MSG="🆕 <b>openClash tidak ada Commit baru</b>
-            ═══════════════════════
+            क═══════क⊹⊱✫⊰⊹क═══════क
             📌 <b>Commit lama:</b> <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
             📌 <b>Author:</b> $COMMIT_AUTHOR
             📌 <b>Tanggal:</b> $COMMIT_DATE_WIB
-            ═══════════════════════
+            क═══════क⊹⊱✫⊰⊹क═══════क
             💬 <b>Message:</b> $COMMIT_MSG"
           fi
             curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
@@ -141,7 +141,7 @@ jobs:
           # Versi sama dengan terakhir
           STATUS="ℹ️ <b>Tidak ada versi baru</b>"
           HEADER="Versi terakhir: <b>$VER</b>"
-          MSG=$(printf "%s\n%s\n\n═══════════════════════\n🔗 <b>Release:</b> <a href=\"%s\">Klik di sini</a>\n📦 <b>IPK:</b> <a href=\"%s/luci-app-openclash_%s_all.ipk\">Download</a>\n📱 <b>APK:</b> <a href=\"%s/luci-app-openclash-%s.apk\">Download</a>" \
+          MSG=$(printf "%s\n%s\n\nक═══════क⊹⊱✫⊰⊹क═══════क\n🔗 <b>Release:</b> <a href=\"%s\">Klik di sini</a>\n📦 <b>IPK:</b> <a href=\"%s/luci-app-openclash_%s_all.ipk\">Download</a>\n📱 <b>APK:</b> <a href=\"%s/luci-app-openclash-%s.apk\">Download</a>" \
             "$STATUS" \
             "$HEADER" \
             "$RELEASE_URL" \
@@ -149,7 +149,7 @@ jobs:
             "$BASE_URL" "$VER")
           else
           # Versi baru terdeteksi → notif build dimulai
-            MSG=$(printf "⚡ <b>Build OpenClash dimulai...</b>\n═══════════════════════\n📌 <b>Versi baru:</b> %s\n📌 <b>Versi lama:</b> %s\n═══════════════════════\nHarap tunggu beberapa menit 🚀" \
+            MSG=$(printf "⚡ <b>Build OpenClash dimulai...</b>\nक═══════क⊹⊱✫⊰⊹क═══════क\n📌 <b>Versi baru:</b> %s\n📌 <b>Versi lama:</b> %s\nक═══════क⊹⊱✫⊰⊹क═══════क\nHarap tunggu beberapa menit 🚀" \
               "$VER" \
               "$OLD_VER")
           fi
@@ -311,7 +311,7 @@ jobs:
           IPK_FILE="luci-app-openclash_${VER}_all.ipk"
           APK_FILE="luci-app-openclash-${VER}.apk"
 
-          MSG=$(printf "✅ Build OpenClash Selesai!\n═══════════════════════\nVersi baru: %s\nVersi lama: %s\n═══════════════════════\n🕒 Start: %s\n⏱ Durasi: %dm %ds\n═══════════════════════\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/%s\">Download</a>\n📱 APK: <a href=\"%s/%s\">Download</a>" \
+          MSG=$(printf "✅ Build OpenClash Selesai!\nक═══════क⊹⊱✫⊰⊹क═══════क\nVersi baru: %s\nVersi lama: %s\nक═══════क⊹⊱✫⊰⊹क═══════क\n🕒 Start: %s\n⏱ Durasi: %dm %ds\nक═══════क⊹⊱✫⊰⊹क═══════क\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/%s\">Download</a>\n📱 APK: <a href=\"%s/%s\">Download</a>" \
             "$VER" \
             "$OLD_VER" \
             "$BUILD_START_HUMAN" \
