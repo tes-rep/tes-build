@@ -196,11 +196,11 @@ jobs:
         if: matrix.target == 'ipk' && steps.cache_ipk.outputs.cache-hit != 'true'
         run: |
           mkdir -p /tmp/sdk_old
-          BASE_URL="https://downloads.openwrt.org/releases/24.10.2/targets/x86/generic"
-          SDK_NAME=$(curl -s $BASE_URL/ | grep -oE 'openwrt-sdk-x86-generic[^"]+\.tar\.zst' | head -n 1)
+          BASE_URL="https://downloads.openwrt.org/releases/24.10.2/targets/x86/64"
+          SDK_NAME=$(curl -s $BASE_URL/ | grep -oE 'openwrt-sdk-x86-64[^"]+\.tar\.zst' | head -n 1)
           curl -SLk "$BASE_URL/$SDK_NAME" -o /tmp/sdk_old.tar.zst
           tar --zstd -xf /tmp/sdk_old.tar.zst -C /tmp/sdk_snap
-          mv /tmp/sdk_old/OpenWrt-SDK-* $GITHUB_WORKSPACE/SDK
+          mv /tmp/sdk_snap/OpenWrt-SDK-* $GITHUB_WORKSPACE/SDK
 
       - name: Clone luci-app-openclash IPK
         if: matrix.target == 'ipk'
