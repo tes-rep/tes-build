@@ -15,6 +15,10 @@ on:
         options:
           - release
           - repo
+      file_name:
+        description: 'Nama file setelah di-download (misalnya myfile.zip)'
+        required: false
+        default: 'downloaded_file.zip'    
       repo_target:
         description: 'Repo tujuan: self / other'
         required: true
@@ -72,8 +76,8 @@ jobs:
 
       - name: Download file dari URL
         run: |
-          curl -L "${{ github.event.inputs.file_url }}" -o downloaded_file
-          echo "FILE_PATH=downloaded_file" >> $GITHUB_ENV
+          curl -L "${{ github.event.inputs.file_url }}" -o "${{ github.event.inputs.file_name }}"
+          echo "FILE_PATH="${{ github.event.inputs.file_name }}" >> $GITHUB_ENV
 
       # === Release di repo ini ===
       - name: Set Release Tag
