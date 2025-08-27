@@ -4,9 +4,17 @@ on:
   workflow_dispatch:
     inputs:
       file_urls:
-        description: 'Masukkan URL file untuk di-download'
+        description: "Daftar URL file (pisahkan dengan newline)"
         required: true
-        default: 'https://example.com/path/to/file.zip'
+        default: |
+          https://example.com/file1.zip
+          https://example.com/file2.img.gz
+      file_names:
+        description: "Daftar nama file (pisahkan dengan newline, urutan sama dengan URL)"
+        required: false
+        default: |
+          file1.zip
+          file2.img.gz
       target:
         description: 'Pilih target upload: release / repo'
         required: true
@@ -14,11 +22,7 @@ on:
         type: choice
         options:
           - release
-          - repo
-      file_names:
-        description: 'Nama file setelah di-download (misalnya myfile.zip)'
-        required: false
-        default: 'downloaded_file.zip'           
+          - repo           
       repo_target:
         description: 'Repo tujuan: self / other'
         required: true
