@@ -54,9 +54,9 @@ jobs:
              Silakan build kernel..."
             else
               MSG="ℹ️ <b>kernel $NAME tidak ada versi baru</b>
-              ═══════════════════════
+              क═══════क⊹⊱✫⊰⊹क═══════क
               📌 <b>Versi terakhir:</b> v$LATEST_VER
-              ═══════════════════════
+              क═══════क⊹⊱✫⊰⊹क═══════क
               📌 <b>Link release:</b> <a href='$RELEASE_URL'>Klik di sini</a>"
             fi
 
