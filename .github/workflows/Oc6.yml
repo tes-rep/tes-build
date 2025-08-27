@@ -14,7 +14,7 @@ jobs:
       last_ver: ${{ steps.setvar.outputs.last_ver }}
       commit_msg: ${{ steps.commit-check.outputs.commit_msg }}
       latest_commit: ${{ steps.commit-check.outputs.latest_commit }}
-      skip_release: ${{ steps.setvar.outputs.skip_release }}
+      skip_release: ${{ steps.commit-check.outputs.skip_release }}
     steps:
       - name: Checkout repo build
         uses: actions/checkout@v4
