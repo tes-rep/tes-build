@@ -4,17 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       file_urls:
-        description: "Daftar URL file (pisahkan dengan newline)"
+        description: "Daftar URL file (pisahkan dengan spasi)"
         required: true
-        default: |
-          https://example.com/file1.zip
-          https://example.com/file2.img.gz
+        default: "https://example.com/file1.zip https://example.com/file2.img.gz"
       file_names:
-        description: "Daftar nama file (pisahkan dengan newline, urutan sama dengan URL)"
+        description: "Daftar nama file (pisahkan dengan spasi, urutan sama dengan URL, optional)"
         required: false
-        default: |
-          file1.zip
-          file2.img.gz
+        default: ""
       target:
         description: 'Pilih target upload: release / repo'
         required: true
@@ -81,7 +77,6 @@ jobs:
       - name: Download multiple files
         run: |
           mkdir files
-          IFS=$'\n'
           urls=(${GITHUB_EVENT_INPUTS_FILE_URLS})
           names=(${GITHUB_EVENT_INPUTS_FILE_NAMES})
           for i in "${!urls[@]}"; do
