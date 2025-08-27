@@ -19,6 +19,10 @@ on:
         description: 'Nama file setelah di-download (misalnya myfile.zip)'
         required: false
         default: 'downloaded_file.zip'    
+      file_Tag:
+        description: 'Nama file setelah di-download (misalnya myfile.zip)'
+        required: false
+        default: 'downloaded_file.zip'       
       repo_target:
         description: 'Repo tujuan: self / other'
         required: true
@@ -83,7 +87,7 @@ jobs:
       - name: Set Release Tag
         if: ${{ github.event.inputs.target == 'release' && github.event.inputs.repo_target == 'self' }}
         run: |
-          TAG="manual-release-$(date +'%Y%m%d-%H%M%S')"
+          TAG="${{ github.event.inputs.file_tag }}"
           echo "TAG=$TAG" >> $GITHUB_ENV
           echo "RELEASE_NAME=Release $TAG" >> $GITHUB_ENV
 
