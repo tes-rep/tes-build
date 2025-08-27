@@ -104,7 +104,7 @@ jobs:
         with:
           tag_name: ${{ env.TAG }}
           name: ${{ env.RELEASE_NAME }}
-          files: ${{ env.FILE_PATH }}
+          files: ${{ env.FILES_PATH }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
