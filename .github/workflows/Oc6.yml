@@ -14,6 +14,7 @@ jobs:
       last_ver: ${{ steps.setvar.outputs.last_ver }}
       commit_msg: ${{ steps.commit-check.outputs.commit_msg }}
       latest_commit: ${{ steps.commit-check.outputs.latest_commit }}
+      skip_release: ${{ steps.setvar.outputs.skip_release }}
     steps:
       - name: Checkout repo build
         uses: actions/checkout@v4
@@ -70,6 +71,9 @@ jobs:
             git pull --rebase --quiet || true
             git push --quiet || true
 
+            # Tandai agar release dijalankan
+            echo "skip_release=false" >> $GITHUB_OUTPUT
+
             # Kirim Notifikasi Commit ke Telegram
             COMMIT_MSG=$(echo "$COMMIT_MSG" | sed 's/\&/\\&/g')
             COMMIT_URL="https://github.com/$REPO/commit/$LATEST_COMMIT"
@@ -82,6 +86,8 @@ jobs:
               💬 <b>Message:</b> $COMMIT_MSG"
 
           else
+            # Commit lama → release skip
+            echo "skip_release=true" >> $GITHUB_OUTPUT
           # Versi baru terdeteksi → notif build dimulai
             COMMIT_MSG=$(echo "$COMMIT_MSG" | sed 's/\&/\\&/g')
             COMMIT_URL="https://github.com/$REPO/commit/$LATEST_COMMIT"
@@ -171,7 +177,7 @@ jobs:
 
   build:
     needs: check-version
-    if: needs.check-version.outputs.skip_build == 'false'
+    if: needs.check-version.outputs.skip_release == 'false'
     runs-on: ubuntu-latest
     strategy:
       matrix:
