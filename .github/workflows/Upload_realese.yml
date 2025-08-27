@@ -77,8 +77,10 @@ jobs:
       - name: Download multiple files
         run: |
           mkdir files
-          urls=(${GITHUB_EVENT_INPUTS_FILE_URLS})
-          names=(${GITHUB_EVENT_INPUTS_FILE_NAMES})
+          # Pisahkan input berdasarkan spasi
+          urls=(${{ github.event.inputs.file_urls }})
+          names=(${{ github.event.inputs.file_names }})
+
           for i in "${!urls[@]}"; do
             url="${urls[$i]}"
             name="${names[$i]}"
@@ -87,7 +89,6 @@ jobs:
             curl -L "$url" -o "files/$name"
           done
           echo "FILES_PATH=files/*" >> $GITHUB_ENV
-
 
       # === Release di repo ini ===
       - name: Set Release Tag
