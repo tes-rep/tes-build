@@ -35,11 +35,38 @@ on:
         description: 'Nama folder di repo (kalau pilih repo)'
         required: false
         default: 'downloads'
+      token_option:
+        description: 'Pilih token GitHub (PAT)'
+        required: true
+        default: tes-rep
+        type: choice
+        options:
+          - tes-rep
+          - kernel54
+          - dirgha80  
 
 jobs:
   download-and-upload:
     runs-on: ubuntu-latest
     steps:
+      - name: Set Token from Input
+        id: choose_token
+        run: |
+          case "${{ github.event.inputs.token_option }}" in
+            tes-rep)
+              echo "PAT=${{ secrets.TARGET_REPO_PAT }}" >> $GITHUB_ENV
+              ;;
+            kernel54)
+              echo "PAT=${{ secrets.TARGET_REPO_PAT2 }}" >> $GITHUB_ENV
+              ;;
+            dirgha80)
+              echo "PAT=${{ secrets.TARGET_REPO_PAT3 }}" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "::error ::Pilihan token tidak valid!"
+              exit 1
+              ;;
+          esac
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -70,7 +97,7 @@ jobs:
       - name: Create Release (repo lain)
         if: ${{ github.event.inputs.target == 'release' && github.event.inputs.repo_target == 'other' }}
         env:
-          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+          GH_TOKEN: ${{ env.PAT }}
         run: |
           TAG="manual-release-$(date +'%Y%m%d-%H%M%S')"
           RELEASE_NAME="Release $TAG"
@@ -96,7 +123,7 @@ jobs:
       - name: Commit file ke repo lain
         if: ${{ github.event.inputs.target == 'repo' && github.event.inputs.repo_target == 'other' }}
         run: |
-          git clone https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ github.event.inputs.target_repo }} target-repo
+          git clone https://x-access-token:${{ env.PAT }}@github.com/${{ github.event.inputs.target_repo }} target-repo
           cd target-repo
           git checkout "${{ github.event.inputs.branch }}" || git checkout -b "${{ github.event.inputs.branch }}"
           mkdir -p "${{ github.event.inputs.folder }}"
