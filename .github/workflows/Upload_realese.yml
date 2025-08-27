@@ -3,7 +3,7 @@ name: Download & Upload (Release / Repo - Self / Other)
 on:
   workflow_dispatch:
     inputs:
-      file_url:
+      file_urls:
         description: 'Masukkan URL file untuk di-download'
         required: true
         default: 'https://example.com/path/to/file.zip'
@@ -15,7 +15,7 @@ on:
         options:
           - release
           - repo
-      file_name:
+      file_names:
         description: 'Nama file setelah di-download (misalnya myfile.zip)'
         required: false
         default: 'downloaded_file.zip'           
@@ -74,10 +74,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download file dari URL
+      - name: Download multiple files
         run: |
-          curl -L "${{ github.event.inputs.file_url }}" -o "${{ github.event.inputs.file_name }}"
-          echo "FILE_PATH=${{ github.event.inputs.file_name }}" >> $GITHUB_ENV
+          mkdir files
+          IFS=$'\n'
+          urls=(${GITHUB_EVENT_INPUTS_FILE_URLS})
+          names=(${GITHUB_EVENT_INPUTS_FILE_NAMES})
+          for i in "${!urls[@]}"; do
+            url="${urls[$i]}"
+            name="${names[$i]}"
+            [ -z "$name" ] && name=$(basename "$url")
+            echo "Download: $url -> files/$name"
+            curl -L "$url" -o "files/$name"
+          done
+          echo "FILES_PATH=files/*" >> $GITHUB_ENV
+
 
       # === Release di repo ini ===
       - name: Set Release Tag
