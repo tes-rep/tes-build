@@ -304,7 +304,7 @@ jobs:
           SEC=$((DURATION % 60))
 
           VER="v${{ needs.check-version.outputs.latest_ver }}"
-          RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/v$VER"
+          RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/$VER"
           BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
           OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
 
