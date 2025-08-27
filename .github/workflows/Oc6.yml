@@ -196,9 +196,8 @@ jobs:
         if: matrix.target == 'ipk' && steps.cache_ipk.outputs.cache-hit != 'true'
         run: |
           mkdir -p /tmp/sdk_snap
-          BASE_URL="https://downloads.openwrt.org/releases/24.10.2/targets/x86/64"
-          SDK_NAME=$(curl -s $BASE_URL/ | grep -oE 'openwrt-sdk-24.10.2-x86-64[^"]+\.tar\.zst' | head -n 1)
-          curl -SLk "$BASE_URL/$SDK_NAME" -o /tmp/sdk_64.tar.zst
+          
+          curl -L https://github.com/tes-rep/tes-build/releases/download/SDK2/stabil.tar.zst -o /tmp/sdk_64.tar.zst
           tar --zstd -xf /tmp/sdk_64.tar.zst -C /tmp/sdk_snap
           mv /tmp/sdk_snap/openwrt-sdk-* "$GITHUB_WORKSPACE/SDK"
 
@@ -244,9 +243,8 @@ jobs:
         if: matrix.target == 'apk' && steps.cache_apk.outputs.cache-hit != 'true'
         run: |
           mkdir -p /tmp/sdk_snap
-          BASE_URL="https://downloads.openwrt.org/snapshots/targets/x86/64"
-          SDK_NAME=$(curl -s $BASE_URL/ | grep -oE 'openwrt-sdk-x86-64[^"]+\.tar\.zst' | head -n 1)
-          curl -SLk "$BASE_URL/$SDK_NAME" -o /tmp/SNAPSDK.tar.zst
+          
+          curl -L https://github.com/tes-rep/tes-build/releases/download/SDK2/snap.tar.zst -o /tmp/SNAPSDK.tar.zst
           tar --zstd -xf /tmp/SNAPSDK.tar.zst -C /tmp/sdk_snap
           mv /tmp/sdk_snap/openwrt-sdk-* $GITHUB_WORKSPACE/SNAPSDK
 
