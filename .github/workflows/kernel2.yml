@@ -46,12 +46,12 @@ jobs:
               echo "$LATEST_VER" > $FILE
               git add $FILE
               MSG="⚡ <b>Versi baru tersedia</b>
-              क═══════क⊹⊱✫⊰⊹क═══════क
-              📌 <b>Versi baru:</b> v$LATEST_VER
-              📌 <b>Versi lama:</b> $OLD_VER
-              📌 <b>Link release:</b> <a href='$RELEASE_URL'>Klik di sini</a>
-              क═══════क⊹⊱✫⊰⊹क═══════क
-             Silakan build kernel..."
+            क═══════क⊹⊱✫⊰⊹क═══════क
+            📌 <b>Versi baru:</b> v$LATEST_VER
+            📌 <b>Versi lama:</b> $OLD_VER
+            📌 <b>Link release:</b> <a href='$RELEASE_URL'>Klik di sini</a>
+            क═══════क⊹⊱✫⊰⊹क═══════क
+            Silakan build kernel..."
             else
               MSG="ℹ️ <b>kernel $NAME tidak ada versi baru</b>
               क═══════क⊹⊱✫⊰⊹क═══════क
