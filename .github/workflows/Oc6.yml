@@ -93,7 +93,7 @@ jobs:
             COMMIT_URL="https://github.com/$REPO/commit/$LATEST_COMMIT"
             MSG="🆕 <b>openClash tidak ada Commit baru</b>
           क══════════क⊹⊱✫⊰⊹क══════════क
-          📌 <b>Commit lama:</b> <a href='$COMMIT_URL'>{$LATEST_COMMIT:0:7}</a>
+          📌 <b>Commit lama:</b> <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
           📌 <b>Author:</b> $COMMIT_AUTHOR
           📌 <b>Tanggal:</b> $COMMIT_DATE_WIB
           क══════════क⊹⊱✫⊰⊹क══════════क
