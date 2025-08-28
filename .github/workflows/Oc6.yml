@@ -61,6 +61,9 @@ jobs:
             OLD_COMMIT=""
           fi
 
+          # Ambil 7 digit pertama dari commit
+          SHORT_COMMIT=${LATEST_COMMIT:0:7}
+
           if [ "$LATEST_COMMIT" != "$OLD_COMMIT" ]; then
             # Simpan commit terbaru
             echo "$LATEST_COMMIT" > data/openclash/last_commit.sha
@@ -79,7 +82,7 @@ jobs:
             COMMIT_URL="https://github.com/$REPO/commit/$LATEST_COMMIT"
             MSG="🆕 <b>Commit baru terdeteksi</b>
           क═══════क⊹⊱✫⊰⊹क═══════क
-          📌 <b>Commit:</b> <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
+          📌 <b>Commit:</b> <a href='$COMMIT_URL'>$SHORT_COMMIT</a>
           📌 <b>Author:</b> $COMMIT_AUTHOR
           📌 <b>Tanggal:</b> $COMMIT_DATE_WIB
           क═══════क⊹⊱✫⊰⊹क═══════क
@@ -93,7 +96,7 @@ jobs:
             COMMIT_URL="https://github.com/$REPO/commit/$LATEST_COMMIT"
             MSG="🆕 <b>openClash tidak ada Commit baru</b>
           क══════════क⊹⊱✫⊰⊹क══════════क
-          📌 <b>Commit lama:</b> <a href='$COMMIT_URL'>$LATEST_COMMIT</a>
+          📌 <b>Commit lama:</b> <a href='$COMMIT_URL'>$SHORT_COMMIT</a>
           📌 <b>Author:</b> $COMMIT_AUTHOR
           📌 <b>Tanggal:</b> $COMMIT_DATE_WIB
           क══════════क⊹⊱✫⊰⊹क══════════क
