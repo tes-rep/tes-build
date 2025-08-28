@@ -110,13 +110,16 @@ jobs:
               OLD_COMMIT="tidak ada"
             fi
 
+            # Ambil 7 digit pertama dari commit
+            SHORT_COMMIT=${LATEST_COMMIT:0:7}
+
             if [ "$LATEST_COMMIT" != "$OLD_COMMIT" ]; then
               echo "$LATEST_COMMIT" > $FILE_COMMIT
               git add $FILE_COMMIT
               MSG="🆕 <b>Commit baru terdeteksi</b>
             क════════क⊹⊱✫⊰⊹क════════क
             📌 <b>Kernel:</b> $NAME
-            📌 <b>Commit:</b> <a href='https://github.com/$REPO/commit/$LATEST_COMMIT'>$LATEST_COMMIT</a>
+            📌 <b>Commit:</b> <a href='https://github.com/$REPO/commit/$LATEST_COMMIT'>$SHORT_COMMIT</a>
             📌 <b>Author:</b> $COMMIT_AUTHOR
             📌 <b>Tanggal:</b> $COMMIT_DATE_WIB
             क════════क⊹⊱✫⊰⊹क════════क
@@ -126,7 +129,7 @@ jobs:
               MSG="ℹ️ <b>$NAME tidak ada commit baru</b>
             क════════क⊹⊱✫⊰⊹क════════क
             📌 <b>Kernel:</b> $NAME
-            📌 <b>Commit terakhir:</b> <a href='https://github.com/$REPO/commit/$LATEST_COMMIT'>$LATEST_COMMIT</a>
+            📌 <b>Commit terakhir:</b> <a href='https://github.com/$REPO/commit/$LATEST_COMMIT'>$SHORT_COMMIT</a>
             📌 <b>Author:</b> $COMMIT_AUTHOR
             📌 <b>Tanggal:</b> $COMMIT_DATE_WIB
             क════════क⊹⊱✫⊰⊹क════════क
