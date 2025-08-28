@@ -156,7 +156,7 @@ jobs:
           # Versi sama dengan terakhir
           STATUS="ℹ️ <b>Tidak ada versi baru</b>"
           HEADER="Versi terakhir: <b>$VER</b>"
-          MSG=$(printf "%s\n%s\n\nक═══════क⊹⊱✫⊰⊹क═══════क\n🔗 <b>Release:</b> <a href=\"%s\">Klik di sini</a>\n📦 <b>IPK:</b> <a href=\"%s/luci-app-openclash_%s_all.ipk\">Download</a>\n📱 <b>APK:</b> <a href=\"%s/luci-app-openclash-%s.apk\">Download</a>" \
+          MSG=$(printf "%s\n%s\n\nक═════क⊹⊱✫⊰⊹क═════क\n🔗 <b>Release:</b> <a href=\"%s\">Klik di sini</a>\n📦 <b>IPK:</b> <a href=\"%s/luci-app-openclash_%s_all.ipk\">Download</a>\n📱 <b>APK:</b> <a href=\"%s/luci-app-openclash-%s.apk\">Download</a>" \
             "$STATUS" \
             "$HEADER" \
             "$RELEASE_URL" \
@@ -164,7 +164,7 @@ jobs:
             "$BASE_URL" "$VER")
           else
           # Versi baru terdeteksi → notif build dimulai
-            MSG=$(printf "⚡ <b>Build OpenClash dimulai...</b>\nक═══════क⊹⊱✫⊰⊹क═══════क\n📌 <b>Versi baru:</b> %s\n📌 <b>Versi lama:</b> %s\nक═══════क⊹⊱✫⊰⊹क═══════क\nHarap tunggu beberapa menit 🚀" \
+            MSG=$(printf "⚡ <b>Build OpenClash dimulai...</b>\nक═════क⊹⊱✫⊰⊹क═════क\n📌 <b>Versi baru:</b> %s\n📌 <b>Versi lama:</b> %s\nक═════क⊹⊱✫⊰⊹क═════क\nHarap tunggu beberapa menit 🚀" \
               "$VER" \
               "$OLD_VER")
           fi
@@ -348,7 +348,7 @@ jobs:
           IPK_FILE="luci-app-openclash_${VER}_all.ipk"
           APK_FILE="luci-app-openclash-${VER}.apk"
 
-          MSG=$(printf "✅ Build OpenClash Selesai!\nक═══════क⊹⊱✫⊰⊹क═══════क\nVersi baru: %s\nVersi lama: %s\nक═══════क⊹⊱✫⊰⊹क═══════क\n🕒 Start: %s\n⏱ Durasi: %dm %ds\nक═══════क⊹⊱✫⊰⊹क═══════क\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/%s\">Download</a>\n📱 APK: <a href=\"%s/%s\">Download</a>" \
+          MSG=$(printf "✅ Build OpenClash Selesai!\nक══════क⊹⊱✫⊰⊹क══════क\nVersi baru: %s\nVersi lama: %s\nक══════क⊹⊱✫⊰⊹क══════क\n🕒 Start: %s\n⏱ Durasi: %dm %ds\nक══════क⊹⊱✫⊰⊹क══════क\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/%s\">Download</a>\n📱 APK: <a href=\"%s/%s\">Download</a>" \
             "$VER" \
             "$OLD_VER" \
             "$BUILD_START_HUMAN" \
