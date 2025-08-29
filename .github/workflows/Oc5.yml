@@ -196,7 +196,7 @@ jobs:
         if: matrix.target == 'ipk' && steps.cache_ipk.outputs.cache-hit != 'true'
         run: |
           mkdir -p /tmp/sdk_old
-          curl -SLk --retry 3 "https://archive.openwrt.org/chaos_calmer/15.05.1/ar71xx/generic/OpenWrt-SDK-15.05.1-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-x86_64.tar.bz2" -o /tmp/SDK.tar.bz2
+          curl -SLk --retry 3 "https://github.com/tes-rep/tes-build/releases/download/SDK2/15.tar.bz2" -o /tmp/SDK.tar.bz2
           tar -xjf /tmp/SDK.tar.bz2 -C /tmp/sdk_old
           mv /tmp/sdk_old/OpenWrt-SDK-* $GITHUB_WORKSPACE/SDK
 
