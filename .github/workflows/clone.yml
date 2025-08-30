@@ -22,7 +22,7 @@ jobs:
         with:
           repository: tes-rep/OpenClash
           ref: dev
-          token: ${{ secrets.TARGET_REPO_PAT2 }}   # PAT harus punya akses write
+          token: ${{ secrets.TARGET_REPO_PAT }}   # PAT harus punya akses write
           path: dest
 
       - name: Sync files
