@@ -23,7 +23,7 @@ jobs:
         with:
           repository: tes-rep/OpenClash
           ref: dev
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ secrets.TARGET_REPO_PAT2 }}
           path: dest
 
       # 3. Bandingkan dengan hash terakhir
