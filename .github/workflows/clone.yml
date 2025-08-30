@@ -59,19 +59,28 @@ jobs:
       # 6. Sync perubahan ke repo tujuan branch dev
       - name: Sync changes
         run: |
+          set -e
           cd dest
+
+          # Set Git identity secara aman
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          export GIT_COMMITTER_NAME="github-actions[bot]"
+          export GIT_COMMITTER_EMAIL="github-actions[bot]@users.noreply.github.com"
 
+          # Sinkronisasi file
           rsync -av --delete ../source/ ./
 
+          # Update file .last_sync
           echo "${{ steps.upstream.outputs.latest }}" > .last_sync
           git add .
 
+          # Commit dan push jika ada perubahan
           if git diff --cached --quiet; then
             echo "✅ Tidak ada perubahan file."
             exit 0
           fi
 
-          git commit -m "Sync from vernesong/OpenClash dev @ ${{ steps.upstream.outputs.latest }}"
+          git commit --author="github-actions[bot] <github-actions[bot]@users.noreply.github.com>" \
+                     -m "Sync from vernesong/OpenClash dev @ ${{ steps.upstream.outputs.latest }}"
           git push origin dev
