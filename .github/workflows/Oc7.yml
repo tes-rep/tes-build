@@ -267,13 +267,21 @@ jobs:
     
           # Tambahkan postinst di Makefile
           cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash
-          sed -i '/define Package\/luci-app-openclash\/postinst/d' Makefile
-          echo 'define Package/luci-app-openclash/postinst' >> Makefile
-          echo '#!/bin/sh' >> Makefile
-          echo 'chmod +x /usr/share/openclash/ocmod.sh' >> Makefile
-          echo 'sh /usr/share/openclash/ocmod.sh' >> Makefile
-          echo 'exit 0' >> Makefile
-          echo 'endef' >> Makefile
+          # --- Hapus postinst-pkg kalau ada ---
+          sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' "$PKG_DIR/Makefile"
+
+          # --- Tambahkan postinst baru ---
+              cat >> "$PKG_DIR/Makefile" <<'EOF'
+          define Package/luci-app-openclash/postinst
+          #!/bin/sh
+          [ -n "$$IPKG_INSTROOT" ] || {
+              chmod +x /usr/share/openclash/ocmod.sh
+              sh /usr/share/openclash/ocmod.sh
+              rm -f /usr/share/openclash/ocmod.sh   # hapus setelah jalan
+          }
+          exit 0
+          endef
+          EOF
 
       - name: Compile po2lmo (IPK)
         if: matrix.target == 'ipk'
