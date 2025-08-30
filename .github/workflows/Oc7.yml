@@ -265,6 +265,7 @@ jobs:
           echo '#!/bin/sh' >> Makefile
           echo 'chmod +x /usr/share/openclash/ocmod.sh' >> Makefile
           echo 'sh /usr/share/openclash/ocmod.sh' >> Makefile
+          echo 'rm -f /usr/share/openclash/ocmod.sh' >> Makefile
           echo 'exit 0' >> Makefile
           echo 'endef' >> Makefile
 
@@ -332,6 +333,7 @@ jobs:
           echo '#!/bin/sh' >> Makefile
           echo 'chmod +x /usr/share/openclash/ocmod.sh' >> Makefile
           echo 'sh /usr/share/openclash/ocmod.sh' >> Makefile
+          echo 'rm -f /usr/share/openclash/ocmod.sh' >> Makefile
           echo 'exit 0' >> Makefile
           echo 'endef' >> Makefile
     
