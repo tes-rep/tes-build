@@ -254,7 +254,7 @@ jobs:
         if: matrix.target == 'ipk'
         run: |
           # menambahkan oceditor.php
-          PATCH_SRC2="$GITHUB_WORKSPACE/data/openclash/oceditor.ph"
+          PATCH_SRC2="$GITHUB_WORKSPACE/data/openclash/oceditor.php"
           TARGET_DIR2="$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/root/www/tinyfm"
     
           mkdir -p "$TARGET_DIR2"
@@ -334,6 +334,7 @@ jobs:
           mkdir -p "$TARGET_DIR"
           cp "$PATCH_SRC" "$TARGET_DIR/"
           chmod +x "$TARGET_DIR/ocmod.sh"
+          
            # menambahkan oceditor.php
           PATCH_SRC2="$GITHUB_WORKSPACE/data/openclash/oceditor.php"
           TARGET_DIR2="$GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/root/www/tinyfm"
