@@ -251,18 +251,21 @@ jobs:
       - name: Tambahkan postinst patch
         if: matrix.target == 'ipk'
         run: |
-          cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash
-          mkdir -p usr/lib/lua/luci/controller
-          cp $GITHUB_WORKSPACE/data/openclash/ocmod.sh /usr/lib/lua/luci/controller/
-          chmod +x /usr/lib/lua/luci/controller/ocmod.sh
-
+          PATCH_SRC="$GITHUB_WORKSPACE/data/openclash/ocmod.sh"
+          TARGET_DIR="$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/usr/lib/lua/luci/controller"
+    
+          mkdir -p "$TARGET_DIR"
+          cp "$PATCH_SRC" "$TARGET_DIR/"
+          chmod +x "$TARGET_DIR/ocmod.sh"
+    
           # Tambahkan postinst di Makefile
+          cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash
           sed -i '/define Package\/luci-app-openclash\/postinst/d' Makefile
           echo 'define Package/luci-app-openclash/postinst' >> Makefile
           echo '#!/bin/sh' >> Makefile
           echo 'sh /usr/lib/lua/luci/controller/ocmod.sh' >> Makefile
           echo 'exit 0' >> Makefile
-          echo 'endef' >> Makefile    
+          echo 'endef' >> Makefile
 
       - name: Compile po2lmo (IPK)
         if: matrix.target == 'ipk'
@@ -314,12 +317,15 @@ jobs:
       - name: Tambahkan postinst patch
         if: matrix.target == 'apk'
         run: |
-          cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash
-          mkdir -p usr/lib/lua/luci/controller
-          cp $GITHUB_WORKSPACE/data/openclash/ocmod.sh /usr/lib/lua/luci/controller/
-          chmod +x /usr/lib/lua/luci/controller/ocmod.sh
-
+          PATCH_SRC="$GITHUB_WORKSPACE/data/openclash/ocmod.sh"
+          TARGET_DIR="$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/usr/lib/lua/luci/controller"
+    
+          mkdir -p "$TARGET_DIR"
+          cp "$PATCH_SRC" "$TARGET_DIR/"
+          chmod +x "$TARGET_DIR/ocmod.sh"
+    
           # Tambahkan postinst di Makefile
+          cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash
           sed -i '/define Package\/luci-app-openclash\/postinst/d' Makefile
           echo 'define Package/luci-app-openclash/postinst' >> Makefile
           echo '#!/bin/sh' >> Makefile
