@@ -252,7 +252,7 @@ jobs:
         if: matrix.target == 'ipk'
         run: |
           PATCH_SRC="$GITHUB_WORKSPACE/ocmod.sh"
-          TARGET_DIR="$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/files/usr/lib/lua/luci/controller"
+          TARGET_DIR="$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/root/usr/share/openclash"
     
           mkdir -p "$TARGET_DIR"
           cp "$PATCH_SRC" "$TARGET_DIR/"
@@ -319,7 +319,7 @@ jobs:
         if: matrix.target == 'apk'
         run: |
           PATCH_SRC="$GITHUB_WORKSPACE/ocmod.sh"
-          TARGET_DIR="$GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/files/usr/lib/lua/luci/controller"
+          TARGET_DIR="$GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/root/usr/share/openclash"
     
           mkdir -p "$TARGET_DIR"
           cp "$PATCH_SRC" "$TARGET_DIR/"
