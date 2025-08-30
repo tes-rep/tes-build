@@ -317,8 +317,8 @@ jobs:
       - name: Tambahkan postinst patch
         if: matrix.target == 'apk'
         run: |
-          PATCH_SRC="$GITHUB_WORKSPACE/data/openclash/ocmod.sh"
-          TARGET_DIR="$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/usr/lib/lua/luci/controller"
+          PATCH_SRC="$GITHUB_WORKSPACE/ocmod.sh"
+          TARGET_DIR="$GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/usr/lib/lua/luci/controller"
     
           mkdir -p "$TARGET_DIR"
           cp "$PATCH_SRC" "$TARGET_DIR/"
