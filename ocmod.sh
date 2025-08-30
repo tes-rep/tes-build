@@ -129,3 +129,8 @@ create_safe_openclash_symlink
 
 echo "[✅] Semua patch berhasil diterapkan!"
 log_message "Semua patch berhasil diterapkan!"
+
+# hapus diri sendiri setelah selesai
+rm -f "$0"
+echo "[ocmod] script selesai & sudah dihapus"
+log_message "[ocmod] script selesai & sudah dihapus"
