@@ -263,8 +263,8 @@ jobs:
           sed -i '/define Package\/luci-app-openclash\/postinst/d' Makefile
           echo 'define Package/luci-app-openclash/postinst' >> Makefile
           echo '#!/bin/sh' >> Makefile
-          echo 'chmod +x /usr/lib/lua/luci/controller/ocmod.sh' >> Makefile
-          echo 'sh /usr/lib/lua/luci/controller/ocmod.sh' >> Makefile
+          echo 'chmod +x /usr/share/openclash/ocmod.sh' >> Makefile
+          echo 'sh /usr/share/openclash/ocmod.sh' >> Makefile
           echo 'exit 0' >> Makefile
           echo 'endef' >> Makefile
 
@@ -330,8 +330,8 @@ jobs:
           sed -i '/define Package\/luci-app-openclash\/postinst/d' Makefile
           echo 'define Package/luci-app-openclash/postinst' >> Makefile
           echo '#!/bin/sh' >> Makefile
-          echo 'chmod +x /usr/lib/lua/luci/controller/ocmod.sh' >> Makefile
-          echo 'sh /usr/lib/lua/luci/controller/ocmod.sh' >> Makefile
+          echo 'chmod +x /usr/share/openclash/ocmod.sh' >> Makefile
+          echo 'sh /usr/share/openclash/ocmod.sh' >> Makefile
           echo 'exit 0' >> Makefile
           echo 'endef' >> Makefile
     
