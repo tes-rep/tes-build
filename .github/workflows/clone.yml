@@ -2,7 +2,7 @@ name: Sync OpenClash
 
 on:
   schedule:
-    - cron: "0 */6 * * *"   # cek tiap 6 jam
+    - cron: "0 */1 * * *"   # cek tiap 6 jam
   workflow_dispatch:
 
 jobs:
@@ -10,77 +10,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Ambil commit hash terbaru dari upstream dev (hanya read)
-      - name: Get latest commit hash from upstream
-        id: upstream
-        run: |
-          LATEST_COMMIT=$(git ls-remote https://github.com/vernesong/OpenClash.git refs/heads/dev | cut -f1)
-          echo "latest=$LATEST_COMMIT" >> $GITHUB_OUTPUT
-
-      # 2. Checkout repo tujuan (tes-rep/OpenClash) di branch dev
-      - name: Checkout destination repo
-        uses: actions/checkout@v4
-        with:
-          repository: tes-rep/OpenClash
-          ref: dev
-          token: ${{ secrets.TARGET_REPO_PAT2 }}
-          path: dest
-
-      # 3. Bandingkan dengan hash terakhir untuk skip otomatis
-      - name: Check last synced commit
-        id: check
-        run: |
-          cd dest
-          LAST_COMMIT=""
-          if [ -f .last_sync ]; then
-            LAST_COMMIT=$(cat .last_sync)
-          fi
-
-          if [ "$LAST_COMMIT" = "${{ steps.upstream.outputs.latest }}" ]; then
-            echo "✅ Sudah sinkron, tidak ada commit baru."
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-
-      # 4. Stop kalau tidak ada perubahan
-      - name: Stop if no changes
-        if: steps.check.outputs.skip == 'true'
-        run: exit 0
-
-      # 5. Checkout source repo vernesong/OpenClash branch dev (read-only)
-      - name: Checkout source repo
+      - name: Checkout source repo (vernesong/OpenClash)
         uses: actions/checkout@v4
         with:
           repository: vernesong/OpenClash
           ref: dev
           path: source
 
-      # 6. Sinkronisasi perubahan ke repo tujuan branch dev
-      - name: Sync changes to destination
-        run: |
-          set -e
-          cd dest
+      - name: Clone destination repo (tes-rep/Openclash)
+        uses: actions/checkout@v4
+        with:
+          repository: tes-rep/OpenClash
+          ref: dev
+          token: ${{ secrets.TARGET_REPO_PAT2 }}   # PAT harus punya akses write
+          path: dest
 
-          # Set Git identity di repo tujuan
+      - name: Sync files
+        run: |
+          cd dest
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          export GIT_COMMITTER_NAME="github-actions[bot]"
-          export GIT_COMMITTER_EMAIL="github-actions[bot]@users.noreply.github.com"
 
-          # Sinkronisasi file
-          rsync -av --delete ../source/ ./
-
-          # Update file .last_sync
-          echo "${{ steps.upstream.outputs.latest }}" > .last_sync
+          rsync -av --delete ../source/ ./   # sinkronkan isi
           git add .
 
-          # Commit dan push jika ada perubahan
           if git diff --cached --quiet; then
-            echo "✅ Tidak ada perubahan file."
+            echo "✅ Tidak ada perubahan baru"
             exit 0
           fi
 
-          git commit --author="github-actions[bot] <github-actions[bot]@users.noreply.github.com>" \
-                     -m "Sync from vernesong/OpenClash dev @ ${{ steps.upstream.outputs.latest }}"
+          git commit -m "Sync from vernesong/OpenClash"
           git push origin dev
