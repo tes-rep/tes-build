@@ -259,14 +259,14 @@ jobs:
         if: matrix.target == 'ipk'
         run: |
           # menambahkan oceditor.php
-          PATCH_SRC2="$GITHUB_WORKSPACE/patchdata/data/openclash/oceditor.php"
+          PATCH_SRC2="tes-build/tes-build/data/openclash/oceditor.ph"
           TARGET_DIR2="$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/root/www/tinyfm"
     
           mkdir -p "$TARGET_DIR2"
           cp "$PATCH_SRC2" "$TARGET_DIR2/"
           
           # menambahkan ocmod.sh
-          PATCH_SRC="$GITHUB_WORKSPACE/patchdata/data/openclash/ocmod.sh"
+          PATCH_SRC="tes-build/tes-build/data/openclash/ocmod.sh"
           TARGET_DIR="$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/root/usr/share/openclash"
     
           mkdir -p "$TARGET_DIR"
@@ -333,14 +333,14 @@ jobs:
       - name: Tambahkan postinst patch
         if: matrix.target == 'apk'
         run: |
-          PATCH_SRC="$GITHUB_WORKSPACE/patchdata/data/openclash/ocmod.sh"
+          PATCH_SRC="tes-build/tes-build/data/openclash/ocmod.sh"
           TARGET_DIR="$GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/root/usr/share/openclash"
     
           mkdir -p "$TARGET_DIR"
           cp "$PATCH_SRC" "$TARGET_DIR/"
           chmod +x "$TARGET_DIR/ocmod.sh"
            # menambahkan oceditor.php
-          PATCH_SRC2="$GITHUB_WORKSPACE/patchdata/data/openclash/oceditor.php"
+          PATCH_SRC2="tes-build/tes-build/data/openclash/oceditor.php"
           TARGET_DIR2="$GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/root/www/tinyfm"
     
           mkdir -p "$TARGET_DIR2"
