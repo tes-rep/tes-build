@@ -268,10 +268,10 @@ jobs:
           # Tambahkan postinst di Makefile
           cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash
           # --- Hapus postinst-pkg kalau ada ---
-          sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' "$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/Makefile"
+          sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' Makefile
 
           # --- Tambahkan postinst baru ---
-              cat >> "$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/Makefile" <<'EOF'
+              cat >> Makefile <<'EOF'
           define Package/luci-app-openclash/postinst
           #!/bin/sh
           [ -n "$$IPKG_INSTROOT" ] || {
