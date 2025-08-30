@@ -1,0 +1,42 @@
+name: Sync OpenClash
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"   # cek tiap 6 jam
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source repo (vernesong/OpenClash)
+        uses: actions/checkout@v4
+        with:
+          repository: vernesong/OpenClash
+          ref: master
+          path: source
+
+      - name: Clone destination repo (tes-rep/Openclash)
+        uses: actions/checkout@v4
+        with:
+          repository: tes-rep/OpenClash
+          token: ${{ secrets.GH_PAT }}   # PAT harus punya akses write
+          path: dest
+
+      - name: Sync files
+        run: |
+          cd dest
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          rsync -av --delete ../source/ ./   # sinkronkan isi
+          git add .
+
+          if git diff --cached --quiet; then
+            echo "✅ Tidak ada perubahan baru"
+            exit 0
+          fi
+
+          git commit -m "Sync from vernesong/OpenClash"
+          git push origin master
