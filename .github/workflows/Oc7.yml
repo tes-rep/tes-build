@@ -126,7 +126,7 @@ jobs:
           if [ -f "$LAST_VER_FILE" ]; then
             LAST_VER=$(cat "$LAST_VER_FILE")
           else
-            LAST_VER="$LATEST_VER"
+            LAST_VER="belum ada"
           fi
           echo "last_ver=$LAST_VER" >> $GITHUB_OUTPUT
           echo "Versi lama: $LAST_VER"
