@@ -34,10 +34,7 @@ jobs:
           rsync -av --delete ../source/ ./   # sinkronkan isi
           git add .
 
-          if git diff --cached --quiet; then
-            echo "✅ Tidak ada perubahan baru"
-            exit 0
-          fi
+          
 
           git commit -m "Sync from vernesong/OpenClash"
           git push origin dev
