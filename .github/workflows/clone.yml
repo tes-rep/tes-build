@@ -2,7 +2,7 @@ name: Sync OpenClash
 
 on:
   schedule:
-    - cron: "0 */1 * * *"   # cek tiap 6 jam
+    - cron: "0 * * * *"   # cek tiap 6 jam
   workflow_dispatch:
 
 jobs:
