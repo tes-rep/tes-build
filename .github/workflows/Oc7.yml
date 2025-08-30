@@ -30,7 +30,7 @@ jobs:
           mkdir -p data/openclash
         
           # Ambil commit terbaru
-          REPO="vernesong/OpenClash"
+          REPO="tes-rep/OpenClash"
           BRANCH="dev"
 
           # Ambil commit terbaru dari branch dev
@@ -118,7 +118,7 @@ jobs:
           # Path file versi
           LAST_VER_FILE="data/openclash/last_version.txt"
         
-          LATEST_VER=$(curl -s https://raw.githubusercontent.com/vernesong/OpenClash/dev/luci-app-openclash/Makefile | grep -oP '(?<=PKG_VERSION:=)[0-9\.]+')
+          LATEST_VER=$(curl -s https://raw.githubusercontent.com/tes-rep/OpenClash/dev/luci-app-openclash/Makefile | grep -oP '(?<=PKG_VERSION:=)[0-9\.]+')
           echo "latest_ver=$LATEST_VER" >> $GITHUB_OUTPUT
           echo "Versi terbaru: $LATEST_VER"
           
@@ -243,7 +243,7 @@ jobs:
             git fetch --depth 1 origin dev
             git reset --hard origin/dev
           else
-            git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
+            git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/tes-rep/OpenClash luci-app-openclash
             cd luci-app-openclash && git sparse-checkout set luci-app-openclash
           fi
 
@@ -326,7 +326,7 @@ jobs:
             git fetch --depth 1 origin dev
             git reset --hard origin/dev
           else
-            git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
+            git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/tes-rep/OpenClash luci-app-openclash
             cd luci-app-openclash && git sparse-checkout set luci-app-openclash
           fi
 
