@@ -193,6 +193,12 @@ jobs:
             -d text="$MSG" \
             -d parse_mode="HTML" \
             -d disable_web_page_preview=true   
+            
+        # --- Salin file patch ---
+      - name: Salin file patch
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/patchdata
+          cp -r data/openclash/* $GITHUB_WORKSPACE/patchdata/    
 
 
   build:
@@ -209,12 +215,7 @@ jobs:
           echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
           echo "BUILD_START_HUMAN=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_ENV
 
-      # --- Salin file patch ---
-      - name: Salin file patch
-        run: |
-          mkdir -p $GITHUB_WORKSPACE/patchdata
-          cp -r data/openclash/* $GITHUB_WORKSPACE/patchdata/    
-
+      
       - name: Checkout repo release
         uses: actions/checkout@v4
         with:
