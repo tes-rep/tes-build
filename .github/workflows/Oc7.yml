@@ -251,7 +251,7 @@ jobs:
       - name: Tambahkan postinst patch
         if: matrix.target == 'ipk'
         run: |
-          PATCH_SRC="data/openclash/ocmod.sh"
+          PATCH_SRC="$GITHUB_WORKSPACE/ocmod.sh"
           TARGET_DIR="$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/usr/lib/lua/luci/controller"
     
           mkdir -p "$TARGET_DIR"
