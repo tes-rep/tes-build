@@ -252,7 +252,7 @@ jobs:
         if: matrix.target == 'ipk'
         run: |
           PATCH_SRC="$GITHUB_WORKSPACE/ocmod.sh"
-          TARGET_DIR="$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/usr/lib/lua/luci/controller"
+          TARGET_DIR="$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/files/usr/lib/lua/luci/controller"
     
           mkdir -p "$TARGET_DIR"
           cp "$PATCH_SRC" "$TARGET_DIR/"
@@ -263,6 +263,7 @@ jobs:
           sed -i '/define Package\/luci-app-openclash\/postinst/d' Makefile
           echo 'define Package/luci-app-openclash/postinst' >> Makefile
           echo '#!/bin/sh' >> Makefile
+          echo 'chmod +x /usr/lib/lua/luci/controller/ocmod.sh' >> Makefile
           echo 'sh /usr/lib/lua/luci/controller/ocmod.sh' >> Makefile
           echo 'exit 0' >> Makefile
           echo 'endef' >> Makefile
@@ -318,7 +319,7 @@ jobs:
         if: matrix.target == 'apk'
         run: |
           PATCH_SRC="$GITHUB_WORKSPACE/ocmod.sh"
-          TARGET_DIR="$GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/usr/lib/lua/luci/controller"
+          TARGET_DIR="$GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/files/usr/lib/lua/luci/controller"
     
           mkdir -p "$TARGET_DIR"
           cp "$PATCH_SRC" "$TARGET_DIR/"
