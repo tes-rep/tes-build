@@ -325,7 +325,7 @@ jobs:
           chmod +x "$TARGET_DIR/ocmod.sh"
     
           # Tambahkan postinst di Makefile
-          cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash
+          cd $GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash
           sed -i '/define Package\/luci-app-openclash\/postinst/d' Makefile
           echo 'define Package/luci-app-openclash/postinst' >> Makefile
           echo '#!/bin/sh' >> Makefile
