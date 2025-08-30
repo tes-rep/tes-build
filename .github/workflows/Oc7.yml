@@ -248,6 +248,22 @@ jobs:
             cd luci-app-openclash && git sparse-checkout set luci-app-openclash
           fi
 
+      - name: Tambahkan postinst patch
+        if: matrix.target == 'ipk'
+        run: |
+          cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash
+          mkdir -p usr/lib/lua/luci/controller
+          cp $GITHUB_WORKSPACE/data/openclash/ocmod.sh /usr/lib/lua/luci/controller/
+          chmod +x /usr/lib/lua/luci/controller/ocmod.sh
+
+          # Tambahkan postinst di Makefile
+          sed -i '/define Package\/luci-app-openclash\/postinst/d' Makefile
+          echo 'define Package/luci-app-openclash/postinst' >> Makefile
+          echo '#!/bin/sh' >> Makefile
+          echo 'sh /usr/lib/lua/luci/controller/ocmod.sh' >> Makefile
+          echo 'exit 0' >> Makefile
+          echo 'endef' >> Makefile    
+
       - name: Compile po2lmo (IPK)
         if: matrix.target == 'ipk'
         run: |
@@ -296,7 +312,7 @@ jobs:
           fi
 
       - name: Tambahkan postinst patch
-        if: matrix.target == 'ipk'
+        if: matrix.target == 'apk'
         run: |
           cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash
           mkdir -p usr/lib/lua/luci/controller
