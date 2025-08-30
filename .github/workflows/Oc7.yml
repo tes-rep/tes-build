@@ -194,7 +194,10 @@ jobs:
             -d parse_mode="HTML" \
             -d disable_web_page_preview=true   
           
-
+      - name: Salin file patch ke /tmp
+        run: |
+          cp -r /data/openclash/* /tmp/data/openclash/
+          
 
   build:
     needs: check-version
@@ -210,10 +213,7 @@ jobs:
           echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
           echo "BUILD_START_HUMAN=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_ENV
 
-      - name: Salin file patch ke /tmp
-        run: |
-          cp -r $GITHUB_WORKSPACE/data/openclash/* /tmp/data/openclash/
-          
+      
       - name: Checkout repo release
         uses: actions/checkout@v4
         with:
