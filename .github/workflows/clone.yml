@@ -10,34 +10,68 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source repo (vernesong/OpenClash)
+      # 1. Ambil commit hash terbaru dari upstream dev
+      - name: Get latest commit hash from upstream
+        id: upstream
+        run: |
+          LATEST_COMMIT=$(git ls-remote https://github.com/vernesong/OpenClash.git refs/heads/dev | cut -f1)
+          echo "latest=$LATEST_COMMIT" >> $GITHUB_OUTPUT
+
+      # 2. Checkout repo tujuan (tes-rep/OpenClash) di branch dev
+      - name: Checkout destination repo
+        uses: actions/checkout@v4
+        with:
+          repository: tes-rep/OpenClash
+          ref: dev
+          token: ${{ secrets.GH_PAT }}
+          path: dest
+
+      # 3. Bandingkan dengan hash terakhir
+      - name: Check last synced commit
+        id: check
+        run: |
+          cd dest
+          LAST_COMMIT=""
+          if [ -f .last_sync ]; then
+            LAST_COMMIT=$(cat .last_sync)
+          fi
+
+          if [ "$LAST_COMMIT" = "${{ steps.upstream.outputs.latest }}" ]; then
+            echo "✅ Sudah sinkron, tidak ada commit baru."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      # 4. Stop kalau tidak ada perubahan
+      - name: Stop if no changes
+        if: steps.check.outputs.skip == 'true'
+        run: exit 0
+
+      # 5. Checkout source repo vernesong/OpenClash branch dev
+      - name: Checkout source repo
         uses: actions/checkout@v4
         with:
           repository: vernesong/OpenClash
           ref: dev
           path: source
 
-      - name: Clone destination repo (tes-rep/Openclash)
-        uses: actions/checkout@v4
-        with:
-          repository: tes-rep/OpenClash
-          ref: dev
-          token: ${{ secrets.TARGET_REPO_PAT2 }}   # PAT harus punya akses write
-          path: dest
-
-      - name: Sync files
+      # 6. Sync perubahan ke repo tujuan branch dev
+      - name: Sync changes
         run: |
           cd dest
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          rsync -av --delete ../source/ ./   # sinkronkan isi
+          rsync -av --delete ../source/ ./
+
+          echo "${{ steps.upstream.outputs.latest }}" > .last_sync
           git add .
 
           if git diff --cached --quiet; then
-            echo "✅ Tidak ada perubahan baru"
+            echo "✅ Tidak ada perubahan file."
             exit 0
           fi
 
-          git commit -m "Sync from vernesong/OpenClash"
-          git push origin master
+          git commit -m "Sync from vernesong/OpenClash dev @ ${{ steps.upstream.outputs.latest }}"
+          git push origin dev
