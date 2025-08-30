@@ -14,14 +14,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: vernesong/OpenClash
-          ref: master
+          ref: dev
           path: source
 
       - name: Clone destination repo (tes-rep/Openclash)
         uses: actions/checkout@v4
         with:
-          repository: tes-rep/OpenClash
-          token: ${{ secrets.GH_PAT }}   # PAT harus punya akses write
+          repository: tes-rep/OpenClashref: dev
+          token: ${{ secrets.TARGET_REPO_PAT2 }}   # PAT harus punya akses write
           path: dest
 
       - name: Sync files
