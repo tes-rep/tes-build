@@ -316,17 +316,11 @@ jobs:
           sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' Makefile
 
           # --- Tambahkan postinst baru ---
-              cat >> Makefile <<'EOF'
-          define Package/$(PKG_NAME)/postinst
-          #!/bin/sh
-          [ -n "$$IPKG_INSTROOT" ] || {
-              chmod +x /usr/share/openclash/ocmod.sh
-              sh /usr/share/openclash/ocmod.sh
-              rm -f /usr/share/openclash/ocmod.sh   # hapus setelah jalan
-          }
-          exit 0
-          endef
-          EOF
+              # Copy postinst langsung
+          cp "$GITHUB_WORKSPACE/data/openclash/postinst" \
+             "$GITHUB_WORKSPACE/SDK3/package/luci-app-openclash/luci-app-openclash/postinst"
+          chmod +x "$GITHUB_WORKSPACE/SDK3/package/luci-app-openclash/luci-app-openclash/postinst"
+
           
       - name: Compile po2lmo (IPK)
         if: matrix.target == 'mod'
@@ -395,22 +389,11 @@ jobs:
           chmod +x "$TARGET_DIR/ocmod.sh"
     
           # Tambahkan postinst di Makefile
-          cd $GITHUB_WORKSPACE/SDK1/package/luci-app-openclash/luci-app-openclash
-          # --- Hapus postinst-pkg kalau ada ---
-          sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' Makefile
+          # Copy postinst langsung
+          cp "$GITHUB_WORKSPACE/data/openclash/postinst" \
+             "$GITHUB_WORKSPACE/SDK1/package/luci-app-openclash/luci-app-openclash/postinst"
+          chmod +x "$GITHUB_WORKSPACE/SDK1/package/luci-app-openclash/luci-app-openclash/postinst"
 
-          # --- Tambahkan postinst baru ---
-              cat >> Makefile <<'EOF'
-          define Package/$(PKG_NAME)/postinst
-          #!/bin/sh
-          [ -n "$$IPKG_INSTROOT" ] || {
-              chmod +x /usr/share/openclash/ocmod.sh
-              sh /usr/share/openclash/ocmod.sh
-              rm -f /usr/share/openclash/ocmod.sh   # hapus setelah jalan
-          }
-          exit 0
-          endef
-          EOF    
           
           
       - name: Download mihomo core (arm64) dari tes-rep
@@ -512,19 +495,10 @@ jobs:
     
           mkdir -p "$TARGET_DIR2"
           cp "$PATCH_SRC2" "$TARGET_DIR2/"
-          # --- Tambahkan postinst baru ---
-              cat >> Makefile <<'EOF'
-          define Package/luci-app-openclash/postinst
-          #!/bin/sh
-          [ -n "$$IPKG_INSTROOT" ] || {
-              chmod +x /usr/share/openclash/ocmod.sh
-              sh /usr/share/openclash/ocmod.sh
-              rm -f /usr/share/openclash/ocmod.sh   # hapus setelah jalan
-          }
-          exit 0
-          endef
-          EOF
-
+          # Copy postinst langsung
+          cp "$GITHUB_WORKSPACE/data/openclash/postinst" \
+             "$GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/postinst"
+          chmod +x "$GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/postinst"
           
     
 
