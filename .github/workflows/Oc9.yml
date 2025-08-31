@@ -423,6 +423,9 @@ jobs:
           CORE_URL=$(curl -s https://api.github.com/repos/tes-rep/mihomo/releases/tags/$TAG \
             | jq -r '.assets[] | select(.name | test("linux-arm64.*gz$")) | .browser_download_url')
 
+          # Hapus file lama (jika ada)
+          rm -f root/etc/openclash/core/clash_meta
+
           wget -O root/etc/openclash/core/clash_meta.gz "$CORE_URL"
           gunzip root/etc/openclash/core/clash_meta.gz
           chmod +x root/etc/openclash/core/clash_meta
@@ -484,6 +487,9 @@ jobs:
           TAG="Prerelease-Alpha"
           CORE_URL=$(curl -s https://api.github.com/repos/tes-rep/mihomo/releases/tags/$TAG \
             | jq -r '.assets[] | select(.name | test("linux-arm64.*gz$")) | .browser_download_url')
+
+            # Hapus file lama (jika ada)
+          rm -f root/etc/openclash/core/clash_meta
 
           wget -O root/etc/openclash/core/clash_meta.gz "$CORE_URL"
           gunzip root/etc/openclash/core/clash_meta.gz
