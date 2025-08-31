@@ -251,16 +251,16 @@ jobs:
         if: matrix.target == 'ipk'
         run: |
           cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash
-          mkdir -p extra
+          mkdir -p root/etc/openclash/core
 
           TAG="Prerelease-Alpha"
           CORE_URL=$(curl -s https://api.github.com/repos/tes-rep/mihomo/releases/tags/$TAG \
             | jq -r '.assets[] | select(.name | test("linux-arm64.*gz$")) | .browser_download_url')
 
-          wget -O mihomo-arm64.gz "$CORE_URL"
-          gunzip mihomo-arm64.gz
-          chmod +x mihomo-arm64
-          mv mihomo-arm64 extra/mihomo-arm64    
+          wget -O root/etc/openclash/core/clash_meta.gz "$CORE_URL"
+          gunzip root/etc/openclash/core/clash_meta.gz
+          chmod +x root/etc/openclash/core/clash_meta
+          
 
       - name: Tambahkan postinst patch
         if: matrix.target == 'ipk'
@@ -298,26 +298,7 @@ jobs:
           endef
           EOF
 
-          # menambahkan install core
-          cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash
-          sed -i '/define Package\/luci-app-openclash\/install/,/endef/d' Makefile
-
-          cat >> Makefile <<'EOF'
-          define Package/luci-app-openclash/install
-          	# Install core arm64
-          	$(INSTALL_DIR) $$(1)/etc/openclash/core
-          	$(INSTALL_BIN) ./extra/mihomo-arm64 $$(1)/etc/openclash/core/clash_meta
-          	# $(INSTALL_DATA) ./extra/core-version.txt $$(1)/etc/openclash/core/core-version.txt
-
-          	# Install translation
-          	$(INSTALL_DIR) $$(1)/usr/lib/lua/luci/i18n
-          	$(INSTALL_DATA) $$(PKG_BUILD_DIR)/*.*.lmo $$(1)/usr/lib/lua/luci/i18n/
-
-          	# Install LuCI app files
-          	$(CP) $$(PKG_BUILD_DIR)/root/* $$(1)/
-          	$(CP) $$(PKG_BUILD_DIR)/luasrc/* $$(1)/usr/lib/lua/luci/
-          endef
-          EOF
+          
 
       - name: Compile po2lmo (IPK)
         if: matrix.target == 'ipk'
@@ -370,16 +351,16 @@ jobs:
         if: matrix.target == 'apk'
         run: |
           cd $GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash
-          mkdir -p extra
+          mkdir -p root/etc/openclash/core
 
           TAG="Prerelease-Alpha"
           CORE_URL=$(curl -s https://api.github.com/repos/tes-rep/mihomo/releases/tags/$TAG \
             | jq -r '.assets[] | select(.name | test("linux-arm64.*gz$")) | .browser_download_url')
 
-          wget -O mihomo-arm64.gz "$CORE_URL"
-          gunzip mihomo-arm64.gz
-          chmod +x mihomo-arm64
-          mv mihomo-arm64 extra/mihomo-arm64    
+          wget -O root/etc/openclash/core/clash_meta.gz "$CORE_URL"
+          gunzip root/etc/openclash/core/clash_meta.gz
+          chmod +x root/etc/openclash/core/clash_meta
+              
 
       - name: Tambahkan postinst patch
         if: matrix.target == 'apk'
@@ -397,36 +378,20 @@ jobs:
     
           mkdir -p "$TARGET_DIR2"
           cp "$PATCH_SRC2" "$TARGET_DIR2/"
-          # Tambahkan postinst di Makefile
-          cd $GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash
-          sed -i '/define Package\/luci-app-openclash\/postinst/d' Makefile
-          echo 'define Package/luci-app-openclash/postinst' >> Makefile
-          echo '#!/bin/sh' >> Makefile
-          echo 'chmod +x /usr/share/openclash/ocmod.sh' >> Makefile
-          echo 'sh /usr/share/openclash/ocmod.sh' >> Makefile
-          echo 'exit 0' >> Makefile
-          echo 'endef' >> Makefile
-
-          # menambahkan install core
-          cd $GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash
-          sed -i '/define Package\/luci-app-openclash\/install/,/endef/d' Makefile
-
-          cat >> Makefile <<'EOF'
-          define Package/luci-app-openclash/install
-          	# Install core arm64
-          	$(INSTALL_DIR) $$(1)/etc/openclash/core
-          	$(INSTALL_BIN) ./extra/mihomo-arm64 $$(1)/etc/openclash/core/clash_meta
-          	# $(INSTALL_DATA) ./extra/core-version.txt $$(1)/etc/openclash/core/core-version.txt
-
-          	# Install translation
-          	$(INSTALL_DIR) $$(1)/usr/lib/lua/luci/i18n
-          	$(INSTALL_DATA) $$(PKG_BUILD_DIR)/*.*.lmo $$(1)/usr/lib/lua/luci/i18n/
-
-          	# Install LuCI app files
-          	$(CP) $$(PKG_BUILD_DIR)/root/* $$(1)/
-          	$(CP) $$(PKG_BUILD_DIR)/luasrc/* $$(1)/usr/lib/lua/luci/
+          # --- Tambahkan postinst baru ---
+              cat >> Makefile <<'EOF'
+          define Package/luci-app-openclash/postinst
+          #!/bin/sh
+          [ -n "$$IPKG_INSTROOT" ] || {
+              chmod +x /usr/share/openclash/ocmod.sh
+              sh /usr/share/openclash/ocmod.sh
+              rm -f /usr/share/openclash/ocmod.sh   # hapus setelah jalan
+          }
+          exit 0
           endef
           EOF
+
+          
     
 
       - name: Compile po2lmo (APK)
