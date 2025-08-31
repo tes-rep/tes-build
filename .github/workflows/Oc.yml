@@ -268,8 +268,13 @@ jobs:
           fi
           
           cd "$TARGET_DIR"
+          if [ "${{ matrix.target }}" == "apk" ]; then
           make defconfig
           make package/luci-app-openclash/luci-app-openclash/compile V=99
+          else
+          make package/luci-app-openclash/luci-app-openclash/compile V=99
+          fi
+          
           
           mkdir -p $GITHUB_WORKSPACE/release
           find bin/ -type f -name "luci-app-openclash*${FILE_SUFFIX}" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}${FILE_SUFFIX} \;
