@@ -128,11 +128,7 @@ jobs:
           echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
           echo "BUILD_START_HUMAN=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_ENV
 
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential git subversion libncurses5-dev zlib1g-dev gawk flex quilt gettext wget unzip python3    
-
+      
       - name: Checkout build repo
         uses: actions/checkout@v4
       
@@ -275,9 +271,9 @@ jobs:
           cd "$TARGET_DIR"
           if [ "${{ matrix.target }}" == "apk" ]; then
           make defconfig
-          make package/luci-app-openclash/luci-app-openclash/compile V=99
+          make FORCE=1 package/luci-app-openclash/luci-app-openclash/compile V=99
           else
-          make package/luci-app-openclash/luci-app-openclash/compile V=99
+          make FORCE=1 package/luci-app-openclash/luci-app-openclash/compile V=99
           fi
           
           
