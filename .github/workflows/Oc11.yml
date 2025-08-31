@@ -331,7 +331,7 @@ jobs:
           make defconfig
           make package/luci-app-openclash/luci-app-openclash/compile V=99
           mkdir -p $GITHUB_WORKSPACE/release
-          find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all_mod.ipk \;
+          find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all-mod.ipk \;
           
         # ----------------- APK Build CORE -----------------  
       - name: Cache SDK Core
@@ -417,7 +417,7 @@ jobs:
           make defconfig
           make package/luci-app-openclash/luci-app-openclash/compile V=99
           mkdir -p $GITHUB_WORKSPACE/release
-          find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all_core.ipk \;
+          find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all-core.ipk \;
 
       # ----------------- APK Build -----------------
       - name: Cache SDK snapshot
@@ -556,8 +556,8 @@ jobs:
           OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
 
           IPK_FILE="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all.ipk"
-          IPK_FILE_MOD="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all_mod.ipk"
-          IPK_FILE_CORE="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all_core.ipk"
+          IPK_FILE_MOD="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all-mod.ipk"
+          IPK_FILE_CORE="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all-core.ipk"
           APK_FILE="luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk"
 
           MSG=$(printf "✅ Build OpenClash Selesai!\nक══════क⊹⊱✫⊰⊹क══════क\nVersi baru: %s\nVersi lama: %s\nक══════क⊹⊱✫⊰⊹क══════क\n🕒 Start: %s\n⏱ Durasi: %dm %ds\nक══════क⊹⊱✫⊰⊹क══════क\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/%s\">Download</a>\n📱 APK: <a href=\"%s/%s\">Download</a>\n📦 MOD: <a href=\"%s/%s\">Download</a>\n📱 CORE: <a href=\"%s/%s\">Download</a>" \
@@ -568,8 +568,8 @@ jobs:
             "$RELEASE_URL" \
             "$BASE_URL" "$IPK_FILE" \
             "$BASE_URL" "$APK_FILE" \
-            "$BASE_URL" "$IPK_FILE-MOD" \
-            "$BASE_URL" "$IPK_FILE-CORE")
+            "$BASE_URL" "$IPK_FILE_MOD" \
+            "$BASE_URL" "$IPK_FILE_CORE")
             
 
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
