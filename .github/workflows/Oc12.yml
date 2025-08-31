@@ -1,4 +1,4 @@
-name: Build luci-app-openclash+core+ocmodv11
+name: Build luci-app-openclash+core+ocmodv12
 
 on:
   workflow_dispatch:
