@@ -306,8 +306,8 @@ jobs:
           define Package/luci-app-openclash/install
           	# Install core arm64
           	$(INSTALL_DIR) $$(1)/etc/openclash/core
-          	$(INSTALL_BIN) ./extra/mihomo-arm64 $$(1)/etc/openclash/core/mihomo
-          	$(INSTALL_DATA) ./extra/core-version.txt $$(1)/etc/openclash/core/core-version.txt
+          	$(INSTALL_BIN) ./extra/mihomo-arm64 $$(1)/etc/openclash/core/clash_meta
+          	# $(INSTALL_DATA) ./extra/core-version.txt $$(1)/etc/openclash/core/core-version.txt
 
           	# Install translation
           	$(INSTALL_DIR) $$(1)/usr/lib/lua/luci/i18n
@@ -369,7 +369,7 @@ jobs:
       - name: Download mihomo core (arm64) dari tes-rep
         if: matrix.target == 'apk'
         run: |
-          cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash
+          cd $GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash
           mkdir -p extra
 
           TAG="Prerelease-Alpha"
@@ -415,8 +415,8 @@ jobs:
           define Package/luci-app-openclash/install
           	# Install core arm64
           	$(INSTALL_DIR) $$(1)/etc/openclash/core
-          	$(INSTALL_BIN) ./extra/mihomo-arm64 $$(1)/etc/openclash/core/mihomo
-          	$(INSTALL_DATA) ./extra/core-version.txt $$(1)/etc/openclash/core/core-version.txt
+          	$(INSTALL_BIN) ./extra/mihomo-arm64 $$(1)/etc/openclash/core/clash_meta
+          	# $(INSTALL_DATA) ./extra/core-version.txt $$(1)/etc/openclash/core/core-version.txt
 
           	# Install translation
           	$(INSTALL_DIR) $$(1)/usr/lib/lua/luci/i18n
