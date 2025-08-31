@@ -433,7 +433,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           repository: tes-rep/Repack_ipk
-          tag_name: v${{ needs.check-version.outputs.latest_ver }}+mod+core
+          tag_name: v${{ needs.check-version.outputs.latest_ver }}
           name: "v${{ needs.check-version.outputs.latest_ver }}"
           body: |
             ## OpenClash v${{ needs.check-version.outputs.latest_ver }}
