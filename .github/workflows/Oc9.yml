@@ -1,0 +1,482 @@
+name: Build luci-app-openclash+core+ocmod
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */3 * * *'
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      skip_build: ${{ steps.setvar.outputs.skip_build }}
+      latest_ver: ${{ steps.setvar.outputs.latest_ver }}
+      last_ver: ${{ steps.setvar.outputs.last_ver }}
+      commit_msg: ${{ steps.commit-check.outputs.commit_msg }}
+      latest_commit: ${{ steps.commit-check.outputs.latest_commit }}
+      skip_release: ${{ steps.commit-check.outputs.skip_release }}
+    steps:
+      - name: Checkout repo build
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      # --- Notifikasi Commit ---
+      - name: Cek Commit Terbaru
+        id: commit-check
+        run: |
+          # Buat folder penyimpanan commit
+          mkdir -p data/openclash
+        
+          # Ambil commit terbaru
+          REPO="vernesong/OpenClash"
+          BRANCH="dev"
+
+          # Ambil commit terbaru dari branch dev
+          COMMIT_JSON=$(curl -s "https://api.github.com/repos/$REPO/commits?per_page=1&sha=$BRANCH")
+
+          LATEST_COMMIT=$(echo "$COMMIT_JSON" | grep -oP '"sha": "\K[0-9a-f]+' | head -n1)
+          COMMIT_MSG=$(echo "$COMMIT_JSON" | grep -oP '"message": "\K[^"]+' | head -n1)
+          COMMIT_AUTHOR=$(echo "$COMMIT_JSON" | grep -oP '"name": "\K[^"]+' | head -n1)
+          # Ambil commit date dari API GitHub
+          COMMIT_DATE=$(echo "$COMMIT_JSON" | jq -r '.[0].commit.committer.date')
+
+          # Konversi ke WIB
+          COMMIT_DATE_WIB=$(TZ="Asia/Jakarta" date -d "$COMMIT_DATE" '+%d-%m-%Y %H:%M:%S WIB')
+
+
+          if [ -z "$LATEST_COMMIT" ]; then
+            echo "⚠️ Gagal ambil commit dari $REPO"
+            exit 1
+          fi
+
+          # Simpan commit message dan sha sebagai output
+          echo "commit_msg=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          echo "latest_commit=$LATEST_COMMIT" >> $GITHUB_OUTPUT
+
+          if [ -f data/openclash/last_commit.sha ]; then
+            OLD_COMMIT=$(cat data/openclash/last_commit.sha)
+          else
+            OLD_COMMIT=""
+          fi
+
+          # Ambil 7 digit pertama dari commit
+          SHORT_COMMIT=${LATEST_COMMIT:0:7}
+
+          if [ "$LATEST_COMMIT" != "$OLD_COMMIT" ]; then
+            # Simpan commit terbaru
+            echo "$LATEST_COMMIT" > data/openclash/last_commit.sha
+            git config user.name "github-actions"
+            git config user.email "actions@github.com"
+            git add data/openclash/last_commit.sha
+            git commit -m "Update last_commit.sha ke $LATEST_COMMIT" --quiet || true
+            git pull --rebase --quiet || true
+            git push --quiet || true
+
+            # Tandai agar release dijalankan
+            echo "skip_release=false" >> $GITHUB_OUTPUT
+
+            # Kirim Notifikasi Commit ke Telegram
+            COMMIT_MSG=$(echo "$COMMIT_MSG" | sed 's/\&/\\&/g')
+            COMMIT_URL="https://github.com/$REPO/commit/$LATEST_COMMIT"
+            MSG="🆕 <b>Commit baru terdeteksi</b>
+          क══════════क⊹⊱✫⊰⊹क══════════क
+          📌 <b>Commit:</b> <a href='$COMMIT_URL'>$SHORT_COMMIT</a>
+          📌 <b>Author:</b> $COMMIT_AUTHOR
+          📌 <b>Tanggal:</b> $COMMIT_DATE_WIB
+          क══════════क⊹⊱✫⊰⊹क══════════क
+          💬 <b>Message:</b> $COMMIT_MSG"
+
+          else
+            # Commit lama → release skip
+            echo "skip_release=true" >> $GITHUB_OUTPUT
+          # Versi baru terdeteksi → notif build dimulai
+            COMMIT_MSG=$(echo "$COMMIT_MSG" | sed 's/\&/\\&/g')
+            COMMIT_URL="https://github.com/$REPO/commit/$LATEST_COMMIT"
+            MSG="🆕 <b>openClash tidak ada Commit baru</b>
+          क══════════क⊹⊱✫⊰⊹क══════════क
+          📌 <b>Commit lama:</b> <a href='$COMMIT_URL'>$SHORT_COMMIT</a>
+          📌 <b>Author:</b> $COMMIT_AUTHOR
+          📌 <b>Tanggal:</b> $COMMIT_DATE_WIB
+          क══════════क⊹⊱✫⊰⊹क══════════क
+          💬 <b>Message:</b> $COMMIT_MSG"
+          fi
+            curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+              -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+              -d text="$MSG" \
+              -d parse_mode="HTML" \
+              -d disable_web_page_preview=true
+               
+
+      - name: Cek versi terbaru
+        id: setvar
+        run: |
+          # Buat folder data untuk simpan info versi
+          mkdir -p data/openclash
+
+          # Path file versi
+          LAST_VER_FILE="data/openclash/last_version.txt"
+        
+          LATEST_VER=$(curl -s https://raw.githubusercontent.com/vernesong/OpenClash/dev/luci-app-openclash/Makefile | grep -oP '(?<=PKG_VERSION:=)[0-9\.]+')
+          echo "latest_ver=$LATEST_VER" >> $GITHUB_OUTPUT
+          echo "Versi terbaru: $LATEST_VER"
+          
+           # Baca versi lama
+          if [ -f "$LAST_VER_FILE" ]; then
+            LAST_VER=$(cat "$LAST_VER_FILE")
+          else
+            LAST_VER="belum ada"
+          fi
+          echo "last_ver=$LAST_VER" >> $GITHUB_OUTPUT
+          echo "Versi lama: $LAST_VER"
+
+          if [ "$LAST_VER" = "$LATEST_VER" ]; then
+            echo "skip_build=true" >> $GITHUB_OUTPUT
+          else
+            echo "$LATEST_VER" > "$LAST_VER_FILE"
+            git config user.name "github-actions"
+            git config user.email "actions@github.com"
+            git add "$LAST_VER_FILE"
+            git commit -m "Update $LAST_VER_FILE ke $LATEST_VER" --quiet || true
+            git pull --rebase --quiet || true
+            git push --quiet || true
+            echo "skip_build=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Notif Telegram versi terbaru
+        run: |
+          VER="v${{ steps.setvar.outputs.latest_ver }}"
+          BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
+          RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/$VER"
+          OLD_VER="v${{ steps.setvar.outputs.last_ver }}"
+          
+
+          if [[ "${{ steps.setvar.outputs.skip_build }}" == "true" ]]; then
+          # Versi sama dengan terakhir
+          STATUS="ℹ️ <b>Tidak ada versi baru</b>"
+          HEADER="Versi terakhir: <b>$VER</b>"
+          MSG=$(printf "%s\n%s\n\nक═════क⊹⊱✫⊰⊹क═════क\n🔗 <b>Release:</b> <a href=\"%s\">Klik di sini</a>\n📦 <b>IPK:</b> <a href=\"%s/luci-app-openclash_%s_all.ipk\">Download</a>\n📱 <b>APK:</b> <a href=\"%s/luci-app-openclash-%s.apk\">Download</a>" \
+            "$STATUS" \
+            "$HEADER" \
+            "$RELEASE_URL" \
+            "$BASE_URL" "$VER" \
+            "$BASE_URL" "$VER")
+          else
+          # Versi baru terdeteksi → notif build dimulai
+            MSG=$(printf "⚡ <b>Build OpenClash dimulai...</b>\nक═════क⊹⊱✫⊰⊹क═════क\n📌 <b>Versi baru:</b> %s\n📌 <b>Versi lama:</b> %s\nक═════क⊹⊱✫⊰⊹क═════क\nHarap tunggu beberapa menit 🚀" \
+              "$VER" \
+              "$OLD_VER")
+          fi
+
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="$MSG" \
+            -d parse_mode="HTML" \
+            -d disable_web_page_preview=true
+
+      - name: notif build
+        if: steps.commit-check.outputs.skip_release == 'false'
+        run: |
+          VER="v${{ steps.setvar.outputs.latest_ver }}"
+          RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/$VER"
+          BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
+          OLD_VER="v${{ steps.setvar.outputs.last_ver }}"
+          
+          # Versi baru terdeteksi → notif build dimulai
+            MSG=$(printf "⚡ <b>Build OpenClash dimulai...</b>\nक═══════क⊹⊱✫⊰⊹क═══════क\n📌 <b>Versi baru:</b> %s\n📌 <b>Versi lama:</b> %s\nक═══════क⊹⊱✫⊰⊹क═══════क\nHarap tunggu beberapa menit 🚀" \
+              "$VER" \
+              "$OLD_VER")
+
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="$MSG" \
+            -d parse_mode="HTML" \
+            -d disable_web_page_preview=true   
+          
+
+  build:
+    needs: check-version
+    if: needs.check-version.outputs.skip_release == 'false'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [ipk, apk, mod, core]
+
+    steps:
+      - name: Catat waktu mulai
+        run: |
+          echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
+          echo "BUILD_START_HUMAN=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_ENV
+
+      
+      # 1. Checkout repo build workflow (misalnya tes-rep/tes-build)
+      - name: Checkout build repo
+        uses: actions/checkout@v4
+        
+      - name: Cache SDK lama
+        if: matrix.target != 'apk'
+        id: cache_ipk
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/SDK
+          key: sdk-old-${{ needs.check-version.outputs.latest_ver }}
+
+      - name: Download & Extract SDK 24.10.2 (x86/generic)
+        if: matrix.target != 'apk' && steps.cache_ipk.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /tmp/sdk_old
+          BASE_URL="https://github.com/tes-rep/tes-build/releases/download/SDK2/stabil.tar.zst"
+          # SDK_NAME=$(curl -s $BASE_URL/ | grep -oE 'openwrt-sdk-24.10.2-x86-64[^"]+\.tar\.zst' | head -n 1)
+          curl -SLk "$BASE_URL" -o /tmp/sdk_64.tar.zst
+          tar --zstd -xf /tmp/sdk_64.tar.zst -C /tmp/sdk_old
+          mv /tmp/sdk_old/openwrt-sdk-* "$GITHUB_WORKSPACE/SDK"
+
+      - name: Clone luci-app-openclash IPK
+        if: matrix.target != 'apk'
+        run: |
+          cd $GITHUB_WORKSPACE/SDK/package
+          if [ -d "luci-app-openclash" ]; then
+            cd luci-app-openclash
+            git fetch --depth 1 origin dev
+            git reset --hard origin/dev
+          else
+            git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
+            cd luci-app-openclash && git sparse-checkout set luci-app-openclash
+          fi
+
+      - name: Compile po2lmo (IPK)
+        if: matrix.target != 'apk'
+        run: |
+          cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
+          make && sudo make install
+
+      - name: Compile luci-app-openclash (IPK)
+        if: matrix.target == 'ipk'
+        run: |
+          cd $GITHUB_WORKSPACE/SDK
+          make package/luci-app-openclash/luci-app-openclash/compile V=99
+          mkdir -p $GITHUB_WORKSPACE/release
+          find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all.ipk \;
+  
+        
+      # ----------------- IPK Build mod -----------------
+      - name: Tambahkan postinst patch
+        if: matrix.target == 'mod' || matrix.target == 'core'
+        run: |
+          # menambahkan oceditor.php
+          PATCH_SRC2="$GITHUB_WORKSPACE/data/openclash/oceditor.php"
+          TARGET_DIR2="$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/root/www/tinyfm"
+    
+          mkdir -p "$TARGET_DIR2"
+          cp "$PATCH_SRC2" "$TARGET_DIR2/"
+          
+          # menambahkan ocmod.sh
+          PATCH_SRC="$GITHUB_WORKSPACE/data/openclash/ocmod.sh"
+          TARGET_DIR="$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/root/usr/share/openclash"
+    
+          mkdir -p "$TARGET_DIR"
+          cp "$PATCH_SRC" "$TARGET_DIR/"
+          chmod +x "$TARGET_DIR/ocmod.sh"
+    
+          # Tambahkan postinst di Makefile
+          cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash
+          # --- Hapus postinst-pkg kalau ada ---
+          sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' Makefile
+
+          # --- Tambahkan postinst baru ---
+              cat >> Makefile <<'EOF'
+          define Package/luci-app-openclash/postinst
+          #!/bin/sh
+          [ -n "$$IPKG_INSTROOT" ] || {
+              chmod +x /usr/share/openclash/ocmod.sh
+              sh /usr/share/openclash/ocmod.sh
+              rm -f /usr/share/openclash/ocmod.sh   # hapus setelah jalan
+          }
+          exit 0
+          endef
+          EOF
+          
+
+      - name: Compile luci-app-openclash (MOD)
+        if: matrix.target == 'mod'
+        run: |
+          cd $GITHUB_WORKSPACE/SDK
+          make defconfig
+          make package/luci-app-openclash/luci-app-openclash/compile V=99
+          mkdir -p $GITHUB_WORKSPACE/release
+          find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all-mod.ipk \;
+          
+
+      - name: Download mihomo core (arm64) dari tes-rep
+        if: matrix.target == 'core'
+        run: |
+          cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash
+          mkdir -p root/etc/openclash/core
+
+          TAG="Prerelease-Alpha"
+          CORE_URL=$(curl -s https://api.github.com/repos/tes-rep/mihomo/releases/tags/$TAG \
+            | jq -r '.assets[] | select(.name | test("linux-arm64.*gz$")) | .browser_download_url')
+
+          wget -O root/etc/openclash/core/clash_meta.gz "$CORE_URL"
+          gunzip root/etc/openclash/core/clash_meta.gz
+          chmod +x root/etc/openclash/core/clash_meta
+          
+          
+
+      - name: Compile luci-app-openclash (core)
+        if: matrix.target == 'core'
+        run: |
+          cd $GITHUB_WORKSPACE/SDK
+          make defconfig
+          make package/luci-app-openclash/luci-app-openclash/compile V=99
+          mkdir -p $GITHUB_WORKSPACE/release
+          find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all- core.ipk \;
+
+      # ----------------- APK Build -----------------
+      - name: Cache SDK snapshot
+        if: matrix.target == 'apk'
+        id: cache_apk
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/SNAPSDK
+          key: sdk-snap-${{ needs.check-version.outputs.latest_ver }}
+
+      - name: Download & Ekstrak SDK Snapshot
+        if: matrix.target == 'apk' && steps.cache_apk.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /tmp/sdk_snap
+          BASE_URL="https://github.com/tes-rep/tes-build/releases/download/SDK2/snap.tar.zst"
+          # SDK_NAME=$(curl -s $BASE_URL/ | grep -oE 'openwrt-sdk-x86-64[^"]+\.tar\.zst' | head -n 1)
+          curl -SLk "$BASE_URL" -o /tmp/SNAPSDK.tar.zst
+          tar --zstd -xf /tmp/SNAPSDK.tar.zst -C /tmp/sdk_snap
+          mv /tmp/sdk_snap/openwrt-sdk-* $GITHUB_WORKSPACE/SNAPSDK
+
+      - name: Clone luci-app-openclash (APK)
+        if: matrix.target == 'apk'
+        run: |
+          cd $GITHUB_WORKSPACE/SNAPSDK/package
+          if [ -d "luci-app-openclash" ]; then
+            cd luci-app-openclash
+            git fetch --depth 1 origin dev
+            git reset --hard origin/dev
+          else
+            git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
+            cd luci-app-openclash && git sparse-checkout set luci-app-openclash
+          fi
+
+      - name: Download mihomo core (arm64) dari tes-rep
+        if: matrix.target == 'apk'
+        run: |
+          cd $GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash
+          mkdir -p root/etc/openclash/core
+
+          TAG="Prerelease-Alpha"
+          CORE_URL=$(curl -s https://api.github.com/repos/tes-rep/mihomo/releases/tags/$TAG \
+            | jq -r '.assets[] | select(.name | test("linux-arm64.*gz$")) | .browser_download_url')
+
+          wget -O root/etc/openclash/core/clash_meta.gz "$CORE_URL"
+          gunzip root/etc/openclash/core/clash_meta.gz
+          chmod +x root/etc/openclash/core/clash_meta
+              
+
+      - name: Tambahkan postinst patch
+        if: matrix.target == 'apk'
+        run: |
+          PATCH_SRC="$GITHUB_WORKSPACE/data/openclash/ocmod.sh"
+          TARGET_DIR="$GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/root/usr/share/openclash"
+    
+          mkdir -p "$TARGET_DIR"
+          cp "$PATCH_SRC" "$TARGET_DIR/"
+          chmod +x "$TARGET_DIR/ocmod.sh"
+          
+           # menambahkan oceditor.php
+          PATCH_SRC2="$GITHUB_WORKSPACE/data/openclash/oceditor.php"
+          TARGET_DIR2="$GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/root/www/tinyfm"
+    
+          mkdir -p "$TARGET_DIR2"
+          cp "$PATCH_SRC2" "$TARGET_DIR2/"
+          # --- Tambahkan postinst baru ---
+              cat >> Makefile <<'EOF'
+          define Package/luci-app-openclash/postinst
+          #!/bin/sh
+          [ -n "$$IPKG_INSTROOT" ] || {
+              chmod +x /usr/share/openclash/ocmod.sh
+              sh /usr/share/openclash/ocmod.sh
+              rm -f /usr/share/openclash/ocmod.sh   # hapus setelah jalan
+          }
+          exit 0
+          endef
+          EOF
+
+          
+    
+
+      - name: Compile po2lmo (APK)
+        if: matrix.target == 'apk'
+        run: |
+          cd $GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
+          make && sudo make install
+
+      - name: Compile luci-app-openclash (APK)
+        if: matrix.target == 'apk'
+        run: |
+          cd $GITHUB_WORKSPACE/SNAPSDK
+          make defconfig
+          make package/luci-app-openclash/luci-app-openclash/compile V=99
+          mkdir -p $GITHUB_WORKSPACE/release
+          find bin/ -type f -name "luci-app-openclash*.apk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk \;
+
+      # ----------------- Upload Release -----------------
+      - name: Upload ke Release
+        id: upload_release
+        uses: softprops/action-gh-release@v1
+        with:
+          repository: tes-rep/Repack_ipk
+          tag_name: v${{ needs.check-version.outputs.latest_ver }}+mod+core
+          name: "v${{ needs.check-version.outputs.latest_ver }}"
+          body: |
+            ## OpenClash v${{ needs.check-version.outputs.latest_ver }}
+            **Changelog:**
+            - Update versi terbaru dari vernesong/dev
+            - **Full Changelog**: https://github.com/vernesong/OpenClash/commits/dev/
+            - Commit terakhir: ${{ needs.check-version.outputs.commit_msg }}
+            - Build IPK & APK
+          files: release/*
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
+
+      # ----------------- Telegram Notif -----------------
+      
+      - name: Notif Telegram Build Selesai
+        if: success()
+        run: |
+          BUILD_END=$(date +%s)
+          DURATION=$((BUILD_END - BUILD_START))
+          MIN=$((DURATION / 60))
+          SEC=$((DURATION % 60))
+
+          VER="v${{ needs.check-version.outputs.latest_ver }}"
+          RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/$VER"
+          BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
+          OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
+
+          IPK_FILE="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all.ipk"
+          APK_FILE="luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk"
+
+          MSG=$(printf "✅ Build OpenClash Selesai!\nक══════क⊹⊱✫⊰⊹क══════क\nVersi baru: %s\nVersi lama: %s\nक══════क⊹⊱✫⊰⊹क══════क\n🕒 Start: %s\n⏱ Durasi: %dm %ds\nक══════क⊹⊱✫⊰⊹क══════क\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/%s\">Download</a>\n📱 APK: <a href=\"%s/%s\">Download</a>" \
+            "$VER" \
+            "$OLD_VER" \
+            "$BUILD_START_HUMAN" \
+            "$MIN" "$SEC" \
+            "$RELEASE_URL" \
+            "$BASE_URL" "$IPK_FILE" \
+            "$BASE_URL" "$APK_FILE")
+            
+
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="$MSG" \
+            -d parse_mode="HTML" \
+            -d disable_web_page_preview=true
