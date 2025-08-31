@@ -214,16 +214,10 @@ jobs:
       - name: Checkout build repo
         uses: actions/checkout@v4
         
-      - name: Cache SDK lama
-        if: matrix.target != 'apk'
-        id: cache_ipk
-        uses: actions/cache@v3
-        with:
-          path: ${{ github.workspace }}/SDK
-          key: sdk-old-${{ needs.check-version.outputs.latest_ver }}
+      
 
       - name: Download & Extract SDK 24.10.2 (x86/generic)
-        if: matrix.target != 'apk' && steps.cache_ipk.outputs.cache-hit != 'true'
+        if: matrix.target != 'apk'
         run: |
           mkdir -p /tmp/sdk_old
           BASE_URL="https://github.com/tes-rep/tes-build/releases/download/SDK2/stabil.tar.zst"
@@ -246,7 +240,7 @@ jobs:
           fi
 
       - name: Compile po2lmo (IPK)
-        if: matrix.target != 'apk'
+        if: matrix.target == 'ipk'
         run: |
           cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
           make && sudo make install
