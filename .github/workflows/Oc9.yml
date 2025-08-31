@@ -273,12 +273,7 @@ jobs:
       - name: Download & Extract SDK 24.10.2 (x86/generic)
         if: matrix.target == 'mod' && steps.cache_mod.outputs.cache-hit != 'true'
         run: |
-          mkdir -p /tmp/sdk_mod
-          BASE_URL="https://github.com/tes-rep/tes-build/releases/download/SDK2/stabil.tar.zst"
-          # SDK_NAME=$(curl -s $BASE_URL/ | grep -oE 'openwrt-sdk-24.10.2-x86-64[^"]+\.tar\.zst' | head -n 1)
-          curl -SLk "$BASE_URL" -o /tmp/sdk_64.tar.zst
-          tar --zstd -xf /tmp/sdk_64.tar.zst -C /tmp/sdk_mod
-          mv /tmp/sdk_mod/openwrt-sdk-* "$GITHUB_WORKSPACE/SDK3"
+          cp -r $GITHUB_WORKSPACE/SDK $GITHUB_WORKSPACE/SDK3
 
       - name: Clone luci-app-openclash IPK
         if: matrix.target == 'mod'
@@ -316,11 +311,19 @@ jobs:
           # --- Hapus postinst-pkg kalau ada ---
           sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' Makefile
 
-          # --- Tambahkan postinst baru ---
-              # Copy postinst langsung
-          cp "$GITHUB_WORKSPACE/data/openclash/postinst" \
-             "$GITHUB_WORKSPACE/SDK3/package/luci-app-openclash/luci-app-openclash/postinst"
-          chmod +x "$GITHUB_WORKSPACE/SDK3/package/luci-app-openclash/luci-app-openclash/postinst"
+         
+              # --- Tambahkan postinst baru ---
+              cat >> Makefile <<'EOF'
+          define Package/luci-app-openclash/postinst
+          #!/bin/sh
+          [ -n "$$IPKG_INSTROOT" ] || {
+              chmod +x /usr/share/openclash/ocmod.sh
+              sh /usr/share/openclash/ocmod.sh
+              rm -f /usr/share/openclash/ocmod.sh   # hapus setelah jalan
+          }
+          exit 0
+          endef
+          EOF
 
           
       - name: Compile po2lmo (IPK)
@@ -351,12 +354,7 @@ jobs:
       - name: Download & Extract SDK 24.10.2 (x86/generic)
         if: matrix.target == 'core' && steps.cache_core.outputs.cache-hit != 'true'
         run: |
-          mkdir -p /tmp/sdk-core
-          BASE_URL="https://github.com/tes-rep/tes-build/releases/download/SDK2/stabil.tar.zst"
-          # SDK_NAME=$(curl -s $BASE_URL/ | grep -oE 'openwrt-sdk-24.10.2-x86-64[^"]+\.tar\.zst' | head -n 1)
-          curl -SLk "$BASE_URL" -o /tmp/sdk_64.tar.zst
-          tar --zstd -xf /tmp/sdk_64.tar.zst -C /tmp/sdk-core
-          mv /tmp/sdk-core/openwrt-sdk-* "$GITHUB_WORKSPACE/SDK1"
+          cp -r $GITHUB_WORKSPACE/SDK $GITHUB_WORKSPACE/SDK1
 
       - name: Clone luci-app-openclash IPK
         if: matrix.target == 'core'
@@ -390,10 +388,17 @@ jobs:
           chmod +x "$TARGET_DIR/ocmod.sh"
     
           # Tambahkan postinst di Makefile
-          # Copy postinst langsung
-          cp "$GITHUB_WORKSPACE/data/openclash/postinst" \
-             "$GITHUB_WORKSPACE/SDK1/package/luci-app-openclash/luci-app-openclash/postinst"
-          chmod +x "$GITHUB_WORKSPACE/SDK1/package/luci-app-openclash/luci-app-openclash/postinst"
+          {
+            echo 'define Package/luci-app-openclash/postinst'
+            echo '#!/bin/sh'
+            echo '[ -n "$$IPKG_INSTROOT" ] || {'
+            echo '    chmod +x /usr/share/openclash/ocmod.sh'
+            echo '    sh /usr/share/openclash/ocmod.sh'
+            echo '    rm -f /usr/share/openclash/ocmod.sh'
+            echo '}'
+            echo 'exit 0'
+            echo 'endef'
+          } >> Makefile
 
           
           
