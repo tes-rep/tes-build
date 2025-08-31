@@ -386,19 +386,23 @@ jobs:
           mkdir -p "$TARGET_DIR"
           cp "$PATCH_SRC" "$TARGET_DIR/"
           chmod +x "$TARGET_DIR/ocmod.sh"
-    
           # Tambahkan postinst di Makefile
-          {
-            echo 'define Package/luci-app-openclash/postinst'
-            echo '#!/bin/sh'
-            echo '[ -n "$$IPKG_INSTROOT" ] || {'
-            echo '    chmod +x /usr/share/openclash/ocmod.sh'
-            echo '    sh /usr/share/openclash/ocmod.sh'
-            echo '    rm -f /usr/share/openclash/ocmod.sh'
-            echo '}'
-            echo 'exit 0'
-            echo 'endef'
-          } >> Makefile
+          cd $GITHUB_WORKSPACE/SDK3/package/luci-app-openclash/luci-app-openclash
+          # --- Hapus postinst-pkg kalau ada ---
+          sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' Makefile
+
+              # --- Tambahkan postinst baru ---
+              cat >> Makefile <<'EOF'
+          define Package/luci-app-openclash/postinst
+          #!/bin/sh
+          [ -n "$$IPKG_INSTROOT" ] || {
+              chmod +x /usr/share/openclash/ocmod.sh
+              sh /usr/share/openclash/ocmod.sh
+              rm -f /usr/share/openclash/ocmod.sh   # hapus setelah jalan
+          }
+          exit 0
+          endef
+          EOF
 
           
           
