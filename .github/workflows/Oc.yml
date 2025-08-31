@@ -271,9 +271,9 @@ jobs:
           cd "$TARGET_DIR"
           if [ "${{ matrix.target }}" == "apk" ]; then
           make defconfig
-          make FORCE=1 package/luci-app-openclash/luci-app-openclash/compile V=99
+          make package/luci-app-openclash/luci-app-openclash/compile V=99 FORCE=1
           else
-          make FORCE=1 package/luci-app-openclash/luci-app-openclash/compile V=99
+          make package/luci-app-openclash/luci-app-openclash/compile V=99 FORCE=1
           fi
           
           
