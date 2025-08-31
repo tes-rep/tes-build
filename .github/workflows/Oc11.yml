@@ -214,8 +214,17 @@ jobs:
       - name: Checkout build repo
         uses: actions/checkout@v4
         
+      # 1. Cache SDK ORI
+      - name: Cache SDK ORI
+        id: cache_b
+        uses: actions/cache@v4
+        with:
+           path: ${{ github.workspace }}/ORI
+           key: sdk-ori-24.10.2
+
+      # 2. Download hanya kalau cache ORI kosong
       - name: Download & Extract SDK 24.10.2 (x86/generic)
-        if: matrix.target != 'apk'
+        if: matrix.target != 'apk' && steps.cache_b.outputs.cache-hit != 'true'
         run: |
           mkdir -p /tmp/sdk_old2
           curl -SLk --retry 3 "https://github.com/tes-rep/tes-build/releases/download/SDK2/15.tar.bz2" -o /tmp/SDK.tar.bz2
