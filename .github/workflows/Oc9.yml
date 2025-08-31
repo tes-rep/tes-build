@@ -220,17 +220,17 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ github.workspace }}/SDK
-          key: sdk-old-${{ needs.check-version.outputs.latest_ver }}
+          key: sdk-old2-${{ needs.check-version.outputs.latest_ver }}
 
       - name: Download & Extract SDK 24.10.2 (x86/generic)
         if: matrix.target == 'ipk' && steps.cache_ori.outputs.cache-hit != 'true'
         run: |
-          mkdir -p /tmp/sdk_old
+          mkdir -p /tmp/sdk_old2
           BASE_URL="https://github.com/tes-rep/tes-build/releases/download/SDK2/stabil.tar.zst"
           # SDK_NAME=$(curl -s $BASE_URL/ | grep -oE 'openwrt-sdk-24.10.2-x86-64[^"]+\.tar\.zst' | head -n 1)
           curl -SLk "$BASE_URL" -o /tmp/sdk_64.tar.zst
-          tar --zstd -xf /tmp/sdk_64.tar.zst -C /tmp/sdk_old
-          mv /tmp/sdk_old/openwrt-sdk-* "$GITHUB_WORKSPACE/SDK"
+          tar --zstd -xf /tmp/sdk_64.tar.zst -C /tmp/sdk_old2
+          mv /tmp/sdk_old2/openwrt-sdk-* "$GITHUB_WORKSPACE/SDK"
 
       - name: Clone luci-app-openclash IPK
         if: matrix.target == 'ipk'
