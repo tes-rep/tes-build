@@ -386,12 +386,13 @@ jobs:
           mkdir -p "$TARGET_DIR"
           cp "$PATCH_SRC" "$TARGET_DIR/"
           chmod +x "$TARGET_DIR/ocmod.sh"
-          
+    
           # Tambahkan postinst di Makefile
-          cd $GITHUB_WORKSPACE/SDK3/package/luci-app-openclash/luci-app-openclash
+          cd $GITHUB_WORKSPACE/SDK1/package/luci-app-openclash/luci-app-openclash
           # --- Hapus postinst-pkg kalau ada ---
           sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' Makefile
 
+         
               # --- Tambahkan postinst baru ---
               cat >> Makefile <<'EOF'
           define Package/luci-app-openclash/postinst
@@ -404,7 +405,6 @@ jobs:
           exit 0
           endef
           EOF
-
           
           
       - name: Download mihomo core (arm64) dari tes-rep
@@ -508,7 +508,7 @@ jobs:
           cp "$PATCH_SRC2" "$TARGET_DIR2/"
           
           # Tambahkan postinst di Makefile
-          cd $GITHUB_WORKSPACE/SDK3/package/luci-app-openclash/luci-app-openclash
+          cd $GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash
           # --- Hapus postinst-pkg kalau ada ---
           sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' Makefile
 
