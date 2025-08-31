@@ -317,7 +317,7 @@ jobs:
 
           # --- Tambahkan postinst baru ---
               cat >> Makefile <<'EOF'
-          define Package/luci-app-openclash/postinst
+          define Package/$(PKG_NAME)/postinst
           #!/bin/sh
           [ -n "$$IPKG_INSTROOT" ] || {
               chmod +x /usr/share/openclash/ocmod.sh
@@ -344,7 +344,7 @@ jobs:
           mkdir -p $GITHUB_WORKSPACE/release
           find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all-mod.ipk \;
           
-          # ----------------- APK Build CORE -----------------  
+        # ----------------- APK Build CORE -----------------  
       - name: Cache SDK Core
         if: matrix.target == 'core'
         id: cache_core
@@ -401,7 +401,7 @@ jobs:
 
           # --- Tambahkan postinst baru ---
               cat >> Makefile <<'EOF'
-          define Package/luci-app-openclash/postinst
+          define Package/$(PKG_NAME)/postinst
           #!/bin/sh
           [ -n "$$IPKG_INSTROOT" ] || {
               chmod +x /usr/share/openclash/ocmod.sh
