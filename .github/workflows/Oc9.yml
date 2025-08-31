@@ -214,10 +214,16 @@ jobs:
       - name: Checkout build repo
         uses: actions/checkout@v4
         
-      
+      - name: Cache SDK lama
+        if: matrix.target == 'ipk'
+        id: cache_ori
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/SDK
+          key: sdk-old-${{ needs.check-version.outputs.latest_ver }}
 
       - name: Download & Extract SDK 24.10.2 (x86/generic)
-        if: matrix.target != 'apk'
+        if: matrix.target == 'ipk' && steps.cache_ori.outputs.cache-hit != 'true'
         run: |
           mkdir -p /tmp/sdk_old
           BASE_URL="https://github.com/tes-rep/tes-build/releases/download/SDK2/stabil.tar.zst"
@@ -227,7 +233,7 @@ jobs:
           mv /tmp/sdk_old/openwrt-sdk-* "$GITHUB_WORKSPACE/SDK"
 
       - name: Clone luci-app-openclash IPK
-        if: matrix.target != 'apk'
+        if: matrix.target == 'ipk'
         run: |
           cd $GITHUB_WORKSPACE/SDK/package
           if [ -d "luci-app-openclash" ]; then
@@ -254,27 +260,58 @@ jobs:
           find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all.ipk \;
   
         
-      # ----------------- IPK Build mod -----------------
+      # ----------------- IPK Build MOD -----------------
+      - name: Cache SDK mod
+        if: matrix.target == 'mod'
+        id: cache_mod
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/SDK3
+          key: sdk-old-${{ needs.check-version.outputs.latest_ver }}
+
+      - name: Download & Extract SDK 24.10.2 (x86/generic)
+        if: matrix.target == 'mod' && steps.cache_mod.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /tmp/sdk_mod
+          BASE_URL="https://github.com/tes-rep/tes-build/releases/download/SDK2/stabil.tar.zst"
+          # SDK_NAME=$(curl -s $BASE_URL/ | grep -oE 'openwrt-sdk-24.10.2-x86-64[^"]+\.tar\.zst' | head -n 1)
+          curl -SLk "$BASE_URL" -o /tmp/sdk_64.tar.zst
+          tar --zstd -xf /tmp/sdk_64.tar.zst -C /tmp/sdk_mod
+          mv /tmp/sdk_mod/openwrt-sdk-* "$GITHUB_WORKSPACE/SDK3"
+
+      - name: Clone luci-app-openclash IPK
+        if: matrix.target == 'mod'
+        run: |
+          cd $GITHUB_WORKSPACE/SDK3/package
+          if [ -d "luci-app-openclash" ]; then
+            cd luci-app-openclash
+            git fetch --depth 1 origin dev
+            git reset --hard origin/dev
+          else
+            git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
+            cd luci-app-openclash && git sparse-checkout set luci-app-openclash
+          fi
+          
       - name: Tambahkan postinst patch
-        if: matrix.target == 'mod' || matrix.target == 'core'
+        if: matrix.target == 'mod'
         run: |
           # menambahkan oceditor.php
           PATCH_SRC2="$GITHUB_WORKSPACE/data/openclash/oceditor.php"
-          TARGET_DIR2="$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/root/www/tinyfm"
+          TARGET_DIR2="$GITHUB_WORKSPACE/SDK3/package/luci-app-openclash/luci-app-openclash/root/www/tinyfm"
     
           mkdir -p "$TARGET_DIR2"
           cp "$PATCH_SRC2" "$TARGET_DIR2/"
           
           # menambahkan ocmod.sh
           PATCH_SRC="$GITHUB_WORKSPACE/data/openclash/ocmod.sh"
-          TARGET_DIR="$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/root/usr/share/openclash"
+          TARGET_DIR="$GITHUB_WORKSPACE/SDK3/package/luci-app-openclash/luci-app-openclash/root/usr/share/openclash"
     
           mkdir -p "$TARGET_DIR"
           cp "$PATCH_SRC" "$TARGET_DIR/"
           chmod +x "$TARGET_DIR/ocmod.sh"
     
           # Tambahkan postinst di Makefile
-          cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash
+          cd $GITHUB_WORKSPACE/SDK3/package/luci-app-openclash/luci-app-openclash
           # --- Hapus postinst-pkg kalau ada ---
           sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' Makefile
 
@@ -291,21 +328,95 @@ jobs:
           endef
           EOF
           
-
+      - name: Compile po2lmo (IPK)
+        if: matrix.target == 'mod'
+        run: |
+          cd $GITHUB_WORKSPACE/SDK3/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
+          make && sudo make install
+      
+          
       - name: Compile luci-app-openclash (MOD)
         if: matrix.target == 'mod'
         run: |
-          cd $GITHUB_WORKSPACE/SDK
+          cd $GITHUB_WORKSPACE/SDK3
           make defconfig
           make package/luci-app-openclash/luci-app-openclash/compile V=99
           mkdir -p $GITHUB_WORKSPACE/release
           find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all-mod.ipk \;
           
+          # ----------------- APK Build CORE -----------------  
+      - name: Cache SDK Core
+        if: matrix.target == 'core'
+        id: cache_core
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/SDK1
+          key: sdk-core-${{ needs.check-version.outputs.latest_ver }}
 
+      - name: Download & Extract SDK 24.10.2 (x86/generic)
+        if: matrix.target == 'core' && steps.cache_core.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /tmp/sdk-core
+          BASE_URL="https://github.com/tes-rep/tes-build/releases/download/SDK2/stabil.tar.zst"
+          # SDK_NAME=$(curl -s $BASE_URL/ | grep -oE 'openwrt-sdk-24.10.2-x86-64[^"]+\.tar\.zst' | head -n 1)
+          curl -SLk "$BASE_URL" -o /tmp/sdk_64.tar.zst
+          tar --zstd -xf /tmp/sdk_64.tar.zst -C /tmp/sdk-core
+          mv /tmp/sdk-core/openwrt-sdk-* "$GITHUB_WORKSPACE/SDK1"
+
+      - name: Clone luci-app-openclash IPK
+        if: matrix.target == 'core'
+        run: |
+          cd $GITHUB_WORKSPACE/SDK1/package
+          if [ -d "luci-app-openclash" ]; then
+            cd luci-app-openclash
+            git fetch --depth 1 origin dev
+            git reset --hard origin/dev
+          else
+            git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
+            cd luci-app-openclash && git sparse-checkout set luci-app-openclash
+          fi
+          
+      - name: Tambahkan postinst patch
+        if: matrix.target == 'core'
+        run: |
+          # menambahkan oceditor.php
+          PATCH_SRC2="$GITHUB_WORKSPACE/data/openclash/oceditor.php"
+          TARGET_DIR2="$GITHUB_WORKSPACE/SDK1/package/luci-app-openclash/luci-app-openclash/root/www/tinyfm"
+    
+          mkdir -p "$TARGET_DIR2"
+          cp "$PATCH_SRC2" "$TARGET_DIR2/"
+          
+          # menambahkan ocmod.sh
+          PATCH_SRC="$GITHUB_WORKSPACE/data/openclash/ocmod.sh"
+          TARGET_DIR="$GITHUB_WORKSPACE/SDK1/package/luci-app-openclash/luci-app-openclash/root/usr/share/openclash"
+    
+          mkdir -p "$TARGET_DIR"
+          cp "$PATCH_SRC" "$TARGET_DIR/"
+          chmod +x "$TARGET_DIR/ocmod.sh"
+    
+          # Tambahkan postinst di Makefile
+          cd $GITHUB_WORKSPACE/SDK1/package/luci-app-openclash/luci-app-openclash
+          # --- Hapus postinst-pkg kalau ada ---
+          sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' Makefile
+
+          # --- Tambahkan postinst baru ---
+              cat >> Makefile <<'EOF'
+          define Package/luci-app-openclash/postinst
+          #!/bin/sh
+          [ -n "$$IPKG_INSTROOT" ] || {
+              chmod +x /usr/share/openclash/ocmod.sh
+              sh /usr/share/openclash/ocmod.sh
+              rm -f /usr/share/openclash/ocmod.sh   # hapus setelah jalan
+          }
+          exit 0
+          endef
+          EOF    
+          
+          
       - name: Download mihomo core (arm64) dari tes-rep
         if: matrix.target == 'core'
         run: |
-          cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash
+          cd $GITHUB_WORKSPACE/SDK1/package/luci-app-openclash/luci-app-openclash
           mkdir -p root/etc/openclash/core
 
           TAG="Prerelease-Alpha"
@@ -316,12 +427,17 @@ jobs:
           gunzip root/etc/openclash/core/clash_meta.gz
           chmod +x root/etc/openclash/core/clash_meta
           
+      - name: Compile po2lmo (IPK)
+        if: matrix.target == 'core'
+        run: |
+          cd $GITHUB_WORKSPACE/SDK1/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
+          make && sudo make install
           
 
       - name: Compile luci-app-openclash (core)
         if: matrix.target == 'core'
         run: |
-          cd $GITHUB_WORKSPACE/SDK
+          cd $GITHUB_WORKSPACE/SDK1
           make defconfig
           make package/luci-app-openclash/luci-app-openclash/compile V=99
           mkdir -p $GITHUB_WORKSPACE/release
@@ -427,7 +543,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           repository: tes-rep/Repack_ipk
-          tag_name: v${{ needs.check-version.outputs.latest_ver }}
+          tag_name: v${{ needs.check-version.outputs.latest_ver }}+mod+core
           name: "v${{ needs.check-version.outputs.latest_ver }}"
           body: |
             ## OpenClash v${{ needs.check-version.outputs.latest_ver }}
