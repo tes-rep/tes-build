@@ -414,8 +414,8 @@ jobs:
         id: upload_release
         uses: softprops/action-gh-release@v1
         with:
-          repository: tes-rep/OpenClash
-          tag_name: v${{ needs.check-version.outputs.latest_ver }}
+          repository: tes-rep/Repack_ipk
+          tag_name: v${{ needs.check-version.outputs.latest_ver }}+mod+core
           name: "v${{ needs.check-version.outputs.latest_ver }}"
           body: |
             ## OpenClash v${{ needs.check-version.outputs.latest_ver }}
