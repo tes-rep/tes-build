@@ -215,7 +215,6 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Cache SDK lama
-        if: matrix.target == 'ipk'
         id: cache_ori
         uses: actions/cache@v3
         with:
@@ -244,7 +243,7 @@ jobs:
           fi  
           
           
-      - name: clone sdk
+      - name: clone luci(ori?
         if: matrix.target == 'ipk'
         run: |
           cp -r $GITHUB_WORKSPACE/ORI $GITHUB_WORKSPACE/SDK 
@@ -267,7 +266,7 @@ jobs:
   
         
       # ----------------- IPK Build MOD -----------------
-      - name: clone sdk
+      - name: clone sdk mod
         if: matrix.target == 'mod'
         run: |
           cp -r $GITHUB_WORKSPACE/ORI $GITHUB_WORKSPACE/MOD
@@ -328,7 +327,7 @@ jobs:
           find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all-mod.ipk \;
           
         # ----------------- APK Build CORE -----------------
-      - name: clone sdk
+      - name: clone luci ov (core)
         if: matrix.target == 'core'
         run: |
           cp -r $GITHUB_WORKSPACE/ORI $GITHUB_WORKSPACE/CORE
