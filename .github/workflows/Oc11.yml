@@ -556,8 +556,8 @@ jobs:
           OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
 
           IPK_FILE="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all.ipk"
-          IPK_FILE-MOD="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all-mod.ipk"
-          IPK_FILE-CORE="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all-core.ipk"
+          IPK_FILE_MOD="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all-mod.ipk"
+          IPK_FILE_CORE="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all-core.ipk"
           APK_FILE="luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk"
 
           MSG=$(printf "✅ Build OpenClash Selesai!\nक══════क⊹⊱✫⊰⊹क══════क\nVersi baru: %s\nVersi lama: %s\nक══════क⊹⊱✫⊰⊹क══════क\n🕒 Start: %s\n⏱ Durasi: %dm %ds\nक══════क⊹⊱✫⊰⊹क══════क\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/%s\">Download</a>\n📱 APK: <a href=\"%s/%s\">Download</a>\n📦 MOD: <a href=\"%s/%s\">Download</a>\n📱 CORE: <a href=\"%s/%s\">Download</a>" \
