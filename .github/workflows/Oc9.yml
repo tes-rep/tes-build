@@ -331,7 +331,7 @@ jobs:
           make defconfig
           make package/luci-app-openclash/luci-app-openclash/compile V=99
           mkdir -p $GITHUB_WORKSPACE/release
-          find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all- core.ipk \;
+          find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all-core.ipk \;
 
       # ----------------- APK Build -----------------
       - name: Cache SDK snapshot
