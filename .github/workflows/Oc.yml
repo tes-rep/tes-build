@@ -194,23 +194,7 @@ jobs:
             -d parse_mode="HTML" \
             -d disable_web_page_preview=true   
 
-      - name: Simpan metadata build
-        run: |
-          mkdir -p release
-          echo "LATEST_VER=${{ steps.setvar.outputs.latest_ver }}" >> release/_meta.txt
-          echo "LAST_VER=${{ steps.setvar.outputs.last_ver }}" >> release/_meta.txt
-          echo "COMMIT_MSG=${{ steps.commit-check.outputs.commit_msg }}" >> release/_meta.txt
-          echo "LATEST_COMMIT=${{ steps.commit-check.outputs.latest_commit }}" >> release/_meta.txt
-          echo "BUILD_START=$(date +%s)" >> release/_meta.txt
-          echo "BUILD_START_HUMAN=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> release/_meta.txt
-        shell: bash
-
-      - name: Upload metadata versi
-        uses: actions/upload-artifact@v4
-        with:
-          name: openclash-meta
-          path: release/_meta.txt
-     
+      
 
   build:
     needs: check-version
@@ -409,23 +393,7 @@ jobs:
     if: success() && (needs.check-version.outputs.skip_build == 'false' || needs.check-version.outputs.skip_release == 'false')
     runs-on: ubuntu-latest
     steps:
-      - name: Download metadata versi
-        uses: actions/download-artifact@v4
-        with:
-          name: openclash-meta
-          path: release
-
-      - name: Load metadata versi
-        id: load_meta
-        run: |
-          source release/_meta.txt
-          echo "latest_ver=$LATEST_VER" >> $GITHUB_OUTPUT
-          echo "last_ver=$LAST_VER" >> $GITHUB_OUTPUT
-          echo "commit_msg=$COMMIT_MSG" >> $GITHUB_OUTPUT
-          echo "latest_commit=$LATEST_COMMIT" >> $GITHUB_OUTPUT
-          echo "build_start=$BUILD_START" >> $GITHUB_OUTPUT
-          echo "build_start_human=$BUILD_START_HUMAN" >> $GITHUB_OUTPUT
-
+     
       - name: Download IPK artifact
         uses: actions/download-artifact@v4
         with:
