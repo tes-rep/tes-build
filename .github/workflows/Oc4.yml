@@ -245,7 +245,7 @@ jobs:
               ;;
           esac
 
-      - name: Setup Target Dir
+      - name: Setup Target Dir+ Clone luci-app-openclash
         run: |
           case "${{ matrix.target }}" in
             ipk) TARGET_DIR="$GITHUB_WORKSPACE/SDK"; FILE_SUFFIX="_all.ipk" ;;
@@ -254,8 +254,12 @@ jobs:
             apk) TARGET_DIR="$GITHUB_WORKSPACE/SNAPSDK"; FILE_SUFFIX=".apk" ;;
           esac
 
-      - name: Clone luci-app-openclash
-        run: |
+          # Simpan ke environment supaya step lain bisa pakai
+          echo "TARGET_DIR=$TARGET_DIR" >> $GITHUB_ENV
+          echo "FILE_SUFFIX=$FILE_SUFFIX" >> $GITHUB_ENV
+
+          # Buat folder package jika belum ada
+          mkdir -p "$TARGET_DIR/package"
           cd "$TARGET_DIR/package"
           if [ -d "luci-app-openclash" ]; then
             cd luci-app-openclash
