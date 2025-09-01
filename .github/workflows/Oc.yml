@@ -308,8 +308,9 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: github-artifacts
+          name: github-artifacts-${{ matrix.target }}
           path: release/*
+
 
   release:
     needs: build
