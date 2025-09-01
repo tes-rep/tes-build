@@ -451,6 +451,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
 
+        # Hapus artifact setelah berhasil upload ke release
+      - name: Delete all artifacts
+        uses: geekyeggo/delete-artifact@v2
+        with:
+          failOnError: false    
+
       - name: Notif Telegram Build Selesai
         if: success()
         run: |
@@ -483,3 +489,17 @@ jobs:
             -d text="$MSG" \
             -d parse_mode="HTML" \
             -d disable_web_page_preview=true
+
+      - name: Kirim notif ke Telegram kalau gagal
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            ❌ Build gagal di ${{ github.repository }}
+            Workflow: ${{ github.workflow }}
+            Branch/Tag: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            🔗 Log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+   
