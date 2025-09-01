@@ -120,13 +120,22 @@ jobs:
           mkdir -p $GITHUB_WORKSPACE/release
           printf "BUILD_START=%s\nBUILD_START_HUMAN=%s\n" "$BUILD_START" "$BUILD_START_HUMAN" > $GITHUB_WORKSPACE/release/_meta.txt
 
-      - name: Notifikasi Build Dimulai
+      - name: Notif Telegram Build Dimulai
         run: |
           VER="v${{ needs.check-version.outputs.latest_ver }}"
           OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
-          MSG="⚡ <b>Build OpenClash dimulai...</b>\nक═════क⊹⊱✫⊰⊹क═════क\n📌 <b>Versi baru:</b> $VER\n📌 <b>Versi lama:</b> $OLD_VER\nक═════क⊹⊱✫⊰⊹क═════क\nHarap tunggu beberapa menit 🚀"
-          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          START_HUMAN="$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')"
+
+            MSG="⚡ <b>Build OpenClash Dimulai...</b>
+          क═════क⊹⊱✫⊰⊹क═════क
+          📌 Versi baru: $VER
+          📌 Versi lama: $OLD_VER
+          🕒 Waktu mulai: $START_HUMAN
+          क═════क⊹⊱✫⊰⊹क═════क
+          Harap tunggu beberapa menit 🚀"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
             -d text="$MSG" \
             -d parse_mode="HTML" \
             -d disable_web_page_preview=true
