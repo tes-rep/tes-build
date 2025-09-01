@@ -218,15 +218,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download & Extract SDK (untuk IPK, MOD, CORE)
-        if: matrix.target != 'apk'
         id: download_sdk_ori
         uses: actions/cache@v3
         with:
           path: ${{ github.workspace }}/ORI
-          key: sdk-ipk-${{ needs.check-version.outputs.latest_ver }}
+          key: sdk-ori-15
 
       - name: Download SDK if cache miss
-        if: matrix.target != 'apk' && steps.download_sdk_ori.outputs.cache-hit != 'true'
+        if: steps.download_sdk_ori.outputs.cache-hit != 'true'
         run: |
           curl -SLk --retry 3 "https://github.com/tes-rep/tes-build/releases/download/SDK2/15.tar.bz2" -o /tmp/SDK.tar.bz2
           tar -xjf /tmp/SDK.tar.bz2 -C /tmp
@@ -238,7 +237,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ github.workspace }}/SNAPSDK
-          key: sdk-snap-${{ needs.check-version.outputs.latest_ver }}
+          key: sdk-snap-24
 
       - name: Download SDK Snapshot if cache miss
         if: matrix.target == 'apk' && steps.download_sdk_apk.outputs.cache-hit != 'true'
