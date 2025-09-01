@@ -203,14 +203,17 @@ jobs:
     strategy:
       matrix:
         target: [ipk, mod, core, apk]
+    outputs:
+      build_start: ${{ steps.start.outputs.build_start }}
+      build_start_human: ${{ steps.start.outputs.build_start_human }}   
 
     steps:
-
       - name: Catat waktu mulai
+        id: start
         run: |
-          echo "BUILD_START=$(date +%s)" >> $GITHUB_OUTPUT
-          echo "BUILD_START_HUMAN=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_OUTPUT
-    
+          echo "build_start=$(date +%s)" >> $GITHUB_OUTPUT
+          echo "build_start_human=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_OUTPUT
+
       - name: Checkout build repo
         uses: actions/checkout@v4
 
@@ -452,7 +455,9 @@ jobs:
         if: success()
         run: |
           BUILD_END=$(date +%s)
-          DURATION=$((BUILD_END - BUILD_START))
+          START=${{ needs.build.outputs.build_start }}
+          START_HUMAN="${{ needs.build.outputs.build_start_human }}"
+          DURATION=$((BUILD_END - START))
           MIN=$((DURATION / 60))
           SEC=$((DURATION % 60))
           
