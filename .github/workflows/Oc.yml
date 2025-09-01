@@ -24,6 +24,7 @@ jobs:
       - name: Cek Versi Terbaru
         id: setvar
         run: |
+          set -e
           mkdir -p data/openclash
           LAST_VER_FILE="data/openclash/last_version.txt"
           LATEST_VER=$(curl -s https://raw.githubusercontent.com/vernesong/OpenClash/dev/luci-app-openclash/Makefile | grep -oP '(?<=PKG_VERSION:=)[0-9\.]+')
@@ -55,6 +56,7 @@ jobs:
       - name: Cek Commit Terbaru
         id: commit-check
         run: |
+          set -e
           mkdir -p data/openclash
           REPO="vernesong/OpenClash"
           BRANCH="dev"
@@ -66,7 +68,7 @@ jobs:
           COMMIT_DATE=$(echo "$COMMIT_JSON" | jq -r '.[0].commit.committer.date')
           COMMIT_DATE_WIB=$(TZ="Asia/Jakarta" date -d "$COMMIT_DATE" '+%d-%m-%Y %H:%M:%S WIB')
           
-          if [ -z "$LATEST_COMMIT" ]; then
+          if [ -z "$LATEST_COMMIT" ] || [ "$LATEST_COMMIT" = "null" ]; then
             echo "Gagal mengambil commit dari $REPO"
             exit 1
           fi
@@ -102,8 +104,23 @@ jobs:
             -d parse_mode="HTML" \
             -d disable_web_page_preview=true
 
+  build:
+    needs: check-version
+    if: needs.check-version.outputs.skip_build == 'false' || needs.check-version.outputs.skip_release == 'false'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [ipk, mod, core, apk]
+
+    steps:
+      - name: Catat waktu mulai & siapkan folder release
+        run: |
+          echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
+          echo "BUILD_START_HUMAN=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_ENV
+          mkdir -p $GITHUB_WORKSPACE/release
+          printf "BUILD_START=%s\nBUILD_START_HUMAN=%s\n" "$BUILD_START" "$BUILD_START_HUMAN" > $GITHUB_WORKSPACE/release/_meta.txt
+
       - name: Notifikasi Build Dimulai
-        if: needs.check-version.outputs.skip_build == 'false'
         run: |
           VER="v${{ needs.check-version.outputs.latest_ver }}"
           OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
@@ -114,37 +131,22 @@ jobs:
             -d parse_mode="HTML" \
             -d disable_web_page_preview=true
 
-  build:
-    needs: check-version
-    if: needs.check-version.outputs.skip_build == 'false' || needs.check-version.outputs.skip_release == 'false'
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target: [ipk, mod, core, apk]
-
-    steps:
-      - name: Catat waktu mulai
-        run: |
-          echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
-          echo "BUILD_START_HUMAN=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_ENV
-
-      
       - name: Checkout build repo
         uses: actions/checkout@v4
-      
+
       - name: Download & Extract SDK (untuk IPK, MOD, CORE)
         id: download_sdk_ori
         uses: actions/cache@v3
         with:
           path: ${{ github.workspace }}/ORI
           key: sdk-ori-${{ needs.check-version.outputs.latest_ver }}
+
       - name: Download SDK if cache miss
         if: steps.download_sdk_ori.outputs.cache-hit != 'true'
         run: |
-          mkdir -p /tmp/sdk_old
           curl -SLk --retry 3 "https://github.com/tes-rep/tes-build/releases/download/SDK2/15.tar.bz2" -o /tmp/SDK.tar.bz2
-          tar -xjf /tmp/SDK.tar.bz2 -C /tmp/sdk_old
-          mv /tmp/sdk_old/OpenWrt-SDK-* "$GITHUB_WORKSPACE/ORI"
+          tar -xjf /tmp/SDK.tar.bz2 -C /tmp
+          mv /tmp/OpenWrt-SDK-* "$GITHUB_WORKSPACE/ORI"
 
       - name: Download & Extract SDK Snapshot (untuk APK)
         if: matrix.target == 'apk'
@@ -153,6 +155,7 @@ jobs:
         with:
           path: ${{ github.workspace }}/SNAPSDK
           key: sdk-snap-${{ needs.check-version.outputs.latest_ver }}
+
       - name: Download SDK Snapshot if cache miss
         if: matrix.target == 'apk' && steps.download_sdk_apk.outputs.cache-hit != 'true'
         run: |
@@ -162,6 +165,7 @@ jobs:
       
       - name: Clone luci-app-openclash
         run: |
+          set -e
           TARGET_DIR=""
           if [ "${{ matrix.target }}" == "ipk" ]; then
             cp -r $GITHUB_WORKSPACE/ORI $GITHUB_WORKSPACE/SDK
@@ -176,20 +180,6 @@ jobs:
             TARGET_DIR="$GITHUB_WORKSPACE/SNAPSDK"
           fi
           
-
-      - name: Clone openclash
-        run: |
-          TARGET_DIR=""
-          if [ "${{ matrix.target }}" == "ipk" ]; then
-            TARGET_DIR="$GITHUB_WORKSPACE/SDK"
-          elif [ "${{ matrix.target }}" == "mod" ]; then
-            TARGET_DIR="$GITHUB_WORKSPACE/MOD"
-          elif [ "${{ matrix.target }}" == "core" ]; then
-            TARGET_DIR="$GITHUB_WORKSPACE/CORE"
-          elif [ "${{ matrix.target }}" == "apk" ]; then
-            TARGET_DIR="$GITHUB_WORKSPACE/SNAPSDK"
-          fi
-          
           cd "$TARGET_DIR/package"
           if [ -d "luci-app-openclash" ]; then
             cd luci-app-openclash
@@ -198,11 +188,12 @@ jobs:
           else
             git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
             cd luci-app-openclash && git sparse-checkout set luci-app-openclash
-          fi    
+          fi
           
       - name: Tambahkan file patch (MOD, CORE, APK)
         if: matrix.target == 'mod' || matrix.target == 'core' || matrix.target == 'apk'
         run: |
+          set -e
           TARGET_DIR=""
           if [ "${{ matrix.target }}" == "mod" ]; then
             TARGET_DIR="$GITHUB_WORKSPACE/MOD"
@@ -237,6 +228,7 @@ jobs:
       - name: Download mihomo core (CORE, APK)
         if: matrix.target == 'core' || matrix.target == 'apk'
         run: |
+          set -e
           TARGET_DIR=""
           if [ "${{ matrix.target }}" == "core" ]; then
             TARGET_DIR="$GITHUB_WORKSPACE/CORE"
@@ -256,6 +248,7 @@ jobs:
 
       - name: Compile po2lmo
         run: |
+          set -e
           TARGET_DIR=""
           if [ "${{ matrix.target }}" == "ipk" ]; then TARGET_DIR="$GITHUB_WORKSPACE/SDK"; fi
           if [ "${{ matrix.target }}" == "mod" ]; then TARGET_DIR="$GITHUB_WORKSPACE/MOD"; fi
@@ -267,6 +260,7 @@ jobs:
 
       - name: Compile luci-app-openclash
         run: |
+          set -e
           TARGET_DIR=""
           FILE_SUFFIX=""
           if [ "${{ matrix.target }}" == "ipk" ]; then 
@@ -284,39 +278,57 @@ jobs:
           fi
           
           cd "$TARGET_DIR"
-          if [ "${{ matrix.target }}" == "apk" ]; then
           make defconfig
-          make package/luci-app-openclash/luci-app-openclash/compile V=99 FORCE=1
+          make package/luci-app-openclash/luci-app-openclash/compile V=99
+          
+          # Salin output ke folder release (pola temukan dari hasil build, rename saat menyalin)
+          if [ "${{ matrix.target }}" = "apk" ]; then
+            # APK: cari file .apk
+            FIND_GLOB="luci-app-openclash*.apk"
+            OUT_NAME="luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk"
           else
-          make package/luci-app-openclash/luci-app-openclash/compile V=99 FORCE=1
+            FIND_GLOB="luci-app-openclash*_all.ipk"
+            OUT_NAME="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}${FILE_SUFFIX}"
           fi
-          
-          
-          mkdir -p $GITHUB_WORKSPACE/release
-          find bin/ -type f -name "luci-app-openclash*${FILE_SUFFIX}" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}${FILE_SUFFIX} \;
+
+          FOUND=$(find bin/ -type f -name "$FIND_GLOB" | head -n1 || true)
+          if [ -z "$FOUND" ]; then
+            echo "Output tidak ditemukan dengan pola: $FIND_GLOB"
+            ls -R bin/ || true
+            exit 1
+          fi
+
+          cp "$FOUND" "$GITHUB_WORKSPACE/release/$OUT_NAME"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.target }}-artifact
-          path: release/   
+          name: github-artifacts
+          path: release/*
 
   release:
     needs: build
     if: success() && (needs.check-version.outputs.skip_build == 'false' || needs.check-version.outputs.skip_release == 'false')
     runs-on: ubuntu-latest
     steps:
-      - name: Catat waktu mulai
-        run: |
-          echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
-          echo "BUILD_START_HUMAN=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_ENV
-
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: github-artifacts
           path: release/
-      
+
+      - name: Ambil metadata waktu mulai
+        id: meta
+        run: |
+          if [ -f release/_meta.txt ]; then
+            source release/_meta.txt
+            echo "start_human=${BUILD_START_HUMAN}" >> $GITHUB_OUTPUT
+            echo "start_epoch=${BUILD_START}" >> $GITHUB_OUTPUT
+          else
+            echo "start_human=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_OUTPUT
+            echo "start_epoch=$(date +%s)" >> $GITHUB_OUTPUT
+          fi
+
       - name: Upload ke Release
         id: upload_release
         uses: softprops/action-gh-release@v1
@@ -340,7 +352,8 @@ jobs:
         if: success()
         run: |
           BUILD_END=$(date +%s)
-          DURATION=$((BUILD_END - BUILD_START))
+          START_EPOCH="${{ steps.meta.outputs.start_epoch }}"
+          DURATION=$((BUILD_END - START_EPOCH))
           MIN=$((DURATION / 60))
           SEC=$((DURATION % 60))
           
@@ -348,14 +361,18 @@ jobs:
           RELEASE_URL="https://github.com/tes-rep/Repack_ipk/releases/tag/$VER"
           BASE_URL="https://github.com/tes-rep/Repack_ipk/releases/download/$VER"
           OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
+          START_HUMAN="${{ steps.meta.outputs.start_human }}"
           
-          MSG=$(printf "✅ Build OpenClash Selesai!\nक══════क⊹⊱✫⊰⊹क══════क\nVersi baru: %s\nVersi lama: %s\nक══════क⊹⊱✫⊰⊹क══════क\n🕒 Start: %s\n⏱ Durasi: %dm %ds\nक══════क⊹⊱✫⊰⊹क══════क\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all.ipk\">Download</a>\n📱 APK: <a href=\"%s/luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk\">Download</a>\n📦 MOD: <a href=\"%s/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all-mod.ipk\">Download</a>\n📱 CORE: <a href=\"%s/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all-core.ipk\">Download</a>" \
+          MSG=$(printf "✅ Build OpenClash Selesai!\nक══════क⊹⊱✫⊰⊹क══════क\nVersi baru: %s\nVersi lama: %s\nक══════क⊹⊱✫⊰⊹क══════क\n🕒 Start: %s\n⏱ Durasi: %dm %ds\nक══════क⊹⊱✫⊰⊹क══════क\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/luci-app-openclash_%s_all.ipk\">Download</a>\n📱 APK: <a href=\"%s/luci-app-openclash-%s.apk\">Download</a>\n📦 MOD: <a href=\"%s/luci-app-openclash_%s_all-mod.ipk\">Download</a>\n📱 CORE: <a href=\"%s/luci-app-openclash_%s_all-core.ipk\">Download</a>" \
             "$VER" \
             "$OLD_VER" \
-            "$BUILD_START_HUMAN" \
+            "$START_HUMAN" \
             "$MIN" "$SEC" \
             "$RELEASE_URL" \
-            "$BASE_URL" "$BASE_URL" "$BASE_URL" "$BASE_URL")
+            "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" \
+            "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" \
+            "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" \
+            "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" )
           
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
