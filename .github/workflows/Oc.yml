@@ -176,6 +176,20 @@ jobs:
             TARGET_DIR="$GITHUB_WORKSPACE/SNAPSDK"
           fi
           
+
+      - name: Clone openclash
+        run: |
+          TARGET_DIR=""
+          if [ "${{ matrix.target }}" == "ipk" ]; then
+            TARGET_DIR="$GITHUB_WORKSPACE/SDK"
+          elif [ "${{ matrix.target }}" == "mod" ]; then
+            TARGET_DIR="$GITHUB_WORKSPACE/MOD"
+          elif [ "${{ matrix.target }}" == "core" ]; then
+            TARGET_DIR="$GITHUB_WORKSPACE/CORE"
+          elif [ "${{ matrix.target }}" == "apk" ]; then
+            TARGET_DIR="$GITHUB_WORKSPACE/SNAPSDK"
+          fi
+          
           cd "$TARGET_DIR/package"
           if [ -d "luci-app-openclash" ]; then
             cd luci-app-openclash
@@ -184,7 +198,7 @@ jobs:
           else
             git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
             cd luci-app-openclash && git sparse-checkout set luci-app-openclash
-          fi
+          fi    
           
       - name: Tambahkan file patch (MOD, CORE, APK)
         if: matrix.target == 'mod' || matrix.target == 'core' || matrix.target == 'apk'
