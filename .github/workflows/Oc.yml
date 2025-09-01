@@ -83,26 +83,7 @@ jobs:
           fi
 
           SHORT_COMMIT=${LATEST_COMMIT:0:7}
-          
-          if [ "$LATEST_COMMIT" != "$OLD_COMMIT" ]; then
-            echo "skip_release=false" >> $GITHUB_OUTPUT
-            echo "$LATEST_COMMIT" > data/openclash/last_commit.sha
-            git config user.name "github-actions"
-            git config user.email "actions@github.com"
-            git add data/openclash/last_commit.sha
-            git commit -m "Update last_commit.sha to $LATEST_COMMIT" || true
-            git push || true
-            MSG="🆕 <b>Commit baru terdeteksi</b>\nक══════════क⊹⊱✫⊰⊹क══════════क\n📌 <b>Commit:</b> <a href='https://github.com/$REPO/commit/$LATEST_COMMIT'>$SHORT_COMMIT</a>\n📌 <b>Author:</b> $COMMIT_AUTHOR\n📌 <b>Tanggal:</b> $COMMIT_DATE_WIB\nक══════════क⊹⊱✫⊰⊹क══════════क\n💬 <b>Message:</b> $COMMIT_MSG"
-          else
-            echo "skip_release=true" >> $GITHUB_OUTPUT
-            MSG="ℹ️ <b>Tidak ada Commit baru</b>\nक══════════क⊹⊱✫⊰⊹क══════════क\n📌 <b>Commit lama:</b> <a href='https://github.com/$REPO/commit/$LATEST_COMMIT'>$SHORT_COMMIT</a>\n📌 <b>Author:</b> $COMMIT_AUTHOR\n📌 <b>Tanggal:</b> $COMMIT_DATE_WIB\nक══════════क⊹⊱✫⊰⊹क══════════क\n💬 <b>Message:</b> $COMMIT_MSG"
-          fi
-          
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d text="$MSG" \
-            -d parse_mode="HTML" \
-            -d disable_web_page_preview=true
+
 
   build:
     needs: check-version
@@ -119,26 +100,6 @@ jobs:
           echo "BUILD_START_HUMAN=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_ENV
           mkdir -p $GITHUB_WORKSPACE/release
           printf "BUILD_START=%s\nBUILD_START_HUMAN=%s\n" "$BUILD_START" "$BUILD_START_HUMAN" > $GITHUB_WORKSPACE/release/_meta.txt
-
-      - name: Notif Telegram Build Dimulai
-        run: |
-          VER="v${{ needs.check-version.outputs.latest_ver }}"
-          OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
-          START_HUMAN="$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')"
-
-            MSG="⚡ <b>Build OpenClash Dimulai...</b>
-          क═════क⊹⊱✫⊰⊹क═════क
-          📌 Versi baru: $VER
-          📌 Versi lama: $OLD_VER
-          🕒 Waktu mulai: $START_HUMAN
-          क═════क⊹⊱✫⊰⊹क═════क
-          Harap tunggu beberapa menit 🚀"
-
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d text="$MSG" \
-            -d parse_mode="HTML" \
-            -d disable_web_page_preview=true
 
       - name: Checkout build repo
         uses: actions/checkout@v4
@@ -328,12 +289,6 @@ jobs:
     if: success() && (needs.check-version.outputs.skip_build == 'false' || needs.check-version.outputs.skip_release == 'false')
     runs-on: ubuntu-latest
     steps:
-      - name: Set vars dari check-version
-        run: |
-          echo "VER=v${{ needs.check-version.outputs.latest_ver }}" >> $GITHUB_ENV
-          echo "COMMIT_MSG=${{ needs.check-version.outputs.commit_msg }}" >> $GITHUB_ENV
-          echo "OLD_VER=v${{ needs.check-version.outputs.last_ver }}" >> $GITHUB_ENV
-          
       - name: Download IPK artifact
         uses: actions/download-artifact@v4
         with:
@@ -403,8 +358,8 @@ jobs:
           SEC=$((DURATION % 60))
           
           VER="v${{ needs.check-version.outputs.latest_ver }}"
-          RELEASE_URL="https://github.com/tes-rep/Repack_ipk/releases/tag/$VER"
-          BASE_URL="https://github.com/tes-rep/Repack_ipk/releases/download/$VER"
+          RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/$VER"
+          BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
           OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
           START_HUMAN="${{ steps.meta.outputs.start_human }}"
           
