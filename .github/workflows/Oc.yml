@@ -205,6 +205,12 @@ jobs:
         target: [ipk, mod, core, apk]
 
     steps:
+
+      - name: Catat waktu mulai
+        run: |
+          echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
+          echo "BUILD_START_HUMAN=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_ENV
+    
       - name: Checkout build repo
         uses: actions/checkout@v4
 
@@ -389,7 +395,7 @@ jobs:
 
 
   release:
-    needs: build
+    needs: [build, check-version]
     if: success() && (needs.check-version.outputs.skip_build == 'false' || needs.check-version.outputs.skip_release == 'false')
     runs-on: ubuntu-latest
     steps:
@@ -424,17 +430,14 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           repository: tes-rep/OpenClash
-          tag_name: v$${{ steps.load_meta.outputs.latest_ver }}
-          name: "v${{ steps.load_meta.outputs.latest_ver }}"
+          tag_name: v${{ needs.check-version.outputs.latest_ver }}
+          name: "v${{ needs.check-version.outputs.latest_ver }}"
           body: |
-            ## OpenClash v${{ steps.load_meta.outputs.latest_ver }}
-
-            🔨 Build dimulai: ${{ steps.load_meta.outputs.build_start_human }}
-
+            ## OpenClash v${{ needs.check-version.outputs.latest_ver }}
             **Changelog:**
             - Update versi terbaru dari vernesong/dev
             - **Full Changelog**: https://github.com/vernesong/OpenClash/commits/dev/
-            - Commit terakhir: ${{ steps.load_meta.outputs.commit_msg }}
+            - Commit terakhir: ${{ needs.check-version.outputs.commit_msg }}
             - Build IPK & APK
           files: |
             release/ipk/*
@@ -454,11 +457,11 @@ jobs:
           MIN=$((DURATION / 60))
           SEC=$((DURATION % 60))
           
-          VER="v${{ steps.load_meta.outputs.latest_ver }}"
+          VER="v${{ needs.check-version.outputs.latest_ver }}"
           RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/$VER"
           BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
-          OLD_VER="v${{ steps.load_meta.outputs.last_ver }}"
-          START_HUMAN="${{ steps.load_meta.outputs.start_human }}"
+          OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
+          START_HUMAN="${{ steps.meta.outputs.start_human }}"
           
           MSG=$(printf "✅ Build OpenClash Selesai!\nक══════क⊹⊱✫⊰⊹क══════क\nVersi baru: %s\nVersi lama: %s\nक══════क⊹⊱✫⊰⊹क══════क\n🕒 Start: %s\n⏱ Durasi: %dm %ds\nक══════क⊹⊱✫⊰⊹क══════क\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/luci-app-openclash_%s_all.ipk\">Download</a>\n📱 APK: <a href=\"%s/luci-app-openclash-%s.apk\">Download</a>\n📦 MOD: <a href=\"%s/luci-app-openclash_%s_all-mod.ipk\">Download</a>\n📱 CORE: <a href=\"%s/luci-app-openclash_%s_all-core.ipk\">Download</a>" \
             "$VER" \
@@ -466,10 +469,10 @@ jobs:
             "$START_HUMAN" \
             "$MIN" "$SEC" \
             "$RELEASE_URL" \
-            "$BASE_URL" "${{ steps.load_meta.outputs.latest_ver }}" \
-            "$BASE_URL" "${{ steps.load_meta.outputs.latest_ver }}" \
-            "$BASE_URL" "${{ steps.load_meta.outputs.latest_ver }}" \
-            "$BASE_URL" "${{ steps.load_meta.outputs.latest_ver }}" )
+            "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" \
+            "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" \
+            "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" \
+            "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" )
           
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
