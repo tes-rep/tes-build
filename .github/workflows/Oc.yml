@@ -318,6 +318,12 @@ jobs:
     if: success() && (needs.check-version.outputs.skip_build == 'false' || needs.check-version.outputs.skip_release == 'false')
     runs-on: ubuntu-latest
     steps:
+      - name: Set vars dari check-version
+        run: |
+          echo "VER=v${{ needs.check-version.outputs.latest_ver }}" >> $GITHUB_ENV
+          echo "COMMIT_MSG=${{ needs.check-version.outputs.commit_msg }}" >> $GITHUB_ENV
+          echo "OLD_VER=v${{ needs.check-version.outputs.last_ver }}" >> $GITHUB_ENV
+          
       - name: Download IPK artifact
         uses: actions/download-artifact@v4
         with:
