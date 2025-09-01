@@ -510,7 +510,7 @@ jobs:
         id: upload_release
         uses: softprops/action-gh-release@v1
         with:
-          repository: tes-rep/Repack_ipk
+          repository: tes-rep/OpenClash
           tag_name: v${{ needs.check-version.outputs.latest_ver }}
           name: "v${{ needs.check-version.outputs.latest_ver }}"
           body: |
@@ -536,8 +536,8 @@ jobs:
           SEC=$((DURATION % 60))
 
           VER="v${{ needs.check-version.outputs.latest_ver }}"
-          RELEASE_URL="https://github.com/tes-rep/Repack_ipk/releases/tag/$VER"
-          BASE_URL="https://github.com/tes-rep/Repack_ipk/releases/download/$VER"
+          RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/$VER"
+          BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
           OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
 
           IPK_FILE="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all.ipk"
