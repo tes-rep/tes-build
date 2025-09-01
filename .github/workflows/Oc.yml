@@ -301,15 +301,16 @@ jobs:
           fi
 
           # pastikan folder release ada
-          mkdir -p "$GITHUB_WORKSPACE/release"
+          RELEASE_DIR="$GITHUB_WORKSPACE/release/${{ matrix.target }}"
+          mkdir -p "$RELEASE_DIR"
 
-          cp "$FOUND" "$GITHUB_WORKSPACE/release/$OUT_NAME"
+          cp "$FOUND" "$RELEASE_DIR/$OUT_NAME"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: github-artifacts-${{ matrix.target }}
-          path: release/*
+          name: openclash-${{ matrix.target }}
+          path: release/${{ matrix.target }}/*
 
 
   release:
@@ -317,10 +318,29 @@ jobs:
     if: success() && (needs.check-version.outputs.skip_build == 'false' || needs.check-version.outputs.skip_release == 'false')
     runs-on: ubuntu-latest
     steps:
-      - name: Download artifacts
+      - name: Download IPK artifact
         uses: actions/download-artifact@v4
         with:
-          path: release/
+          name: openclash-ipk
+          path: release/ipk
+
+      - name: Download MOD artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openclash-mod
+          path: release/mod
+
+      - name: Download CORE artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openclash-core
+          path: release/core
+
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openclash-apk
+          path: release/apk
 
       - name: Ambil metadata waktu mulai
         id: meta
@@ -338,7 +358,7 @@ jobs:
         id: upload_release
         uses: softprops/action-gh-release@v1
         with:
-          repository: tes-rep/Repack_ipk
+          repository: tes-rep/OpenClash
           tag_name: v${{ needs.check-version.outputs.latest_ver }}
           name: "v${{ needs.check-version.outputs.latest_ver }}"
           body: |
@@ -348,7 +368,11 @@ jobs:
             - **Full Changelog**: https://github.com/vernesong/OpenClash/commits/dev/
             - Commit terakhir: ${{ needs.check-version.outputs.commit_msg }}
             - Build IPK & APK
-          files: release/*
+          files: |
+            release/ipk/*
+            release/mod/*
+            release/core/*
+            release/apk/*
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
