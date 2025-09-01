@@ -281,6 +281,12 @@ jobs:
           mkdir -p $GITHUB_WORKSPACE/release
           find bin/ -type f -name "luci-app-openclash*${FILE_SUFFIX}" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}${FILE_SUFFIX} \;
 
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}-artifact
+          path: release/   
+
   release:
     needs: build
     if: success() && (needs.check-version.outputs.skip_build == 'false' || needs.check-version.outputs.skip_release == 'false')
