@@ -300,6 +300,9 @@ jobs:
             exit 1
           fi
 
+          # pastikan folder release ada
+          mkdir -p "$GITHUB_WORKSPACE/release"
+
           cp "$FOUND" "$GITHUB_WORKSPACE/release/$OUT_NAME"
 
       - name: Upload artifacts
