@@ -220,7 +220,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ github.workspace }}/ORI
-          key: sdk-ori-${{ needs.check-version.outputs.latest_ver }}
+          key: sdk-ipk-${{ needs.check-version.outputs.latest_ver }}
 
       - name: Download SDK if cache miss
         if: matrix.target != 'apk' && steps.download_sdk_ori.outputs.cache-hit != 'true'
