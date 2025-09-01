@@ -285,19 +285,17 @@ jobs:
           make package/luci-app-openclash/luci-app-openclash/compile V=99
           fi
           
-          # Salin output ke folder release (pola temukan dari hasil build, rename saat menyalin)
+          # Cari output file dengan pola lebih fleksibel
           if [ "${{ matrix.target }}" = "apk" ]; then
-            # APK: cari file .apk
-            FIND_GLOB="luci-app-openclash*.apk"
+            FOUND=$(find bin/ -type f -name "*.apk" | head -n1 || true)
             OUT_NAME="luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk"
           else
-            FIND_GLOB="luci-app-openclash*_all.ipk"
+            FOUND=$(find bin/ -type f -name "luci-app-openclash*.ipk" | head -n1 || true)
             OUT_NAME="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}${FILE_SUFFIX}"
           fi
 
-          FOUND=$(find bin/ -type f -name "$FIND_GLOB" | head -n1 || true)
           if [ -z "$FOUND" ]; then
-            echo "Output tidak ditemukan dengan pola: $FIND_GLOB"
+            echo "❌ Output tidak ditemukan di folder bin/"
             ls -R bin/ || true
             exit 1
           fi
