@@ -232,15 +232,8 @@ jobs:
       - name: Checkout build repo
         uses: actions/checkout@v4
 
-      - name: Download & Extract SDK (untuk IPK, MOD, CORE)
-        id: download_sdk_ori
-        uses: actions/cache@v3
-        with:
-          path: ${{ github.workspace }}/ORI
-          key: sdk-ori-15
 
       - name: Download SDK if cache miss
-        if: steps.download_sdk_ori.outputs.cache-hit != 'true'
         run: |
           set -e
           TARGET_DIR=""
