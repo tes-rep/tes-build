@@ -218,9 +218,28 @@ jobs:
       - name: Checkout build repo
         uses: actions/checkout@v4
 
+      - name: Set TARGET_DIR
+        if: matrix.target != 'apk'
+        run: |
+          if [ "${{ matrix.target }}" = "ipk" ]; then
+            echo "TARGET_DIR=$GITHUB_WORKSPACE/SDK" >> $GITHUB_ENV
+          elif [ "${{ matrix.target }}" = "mod" ]; then
+            echo "TARGET_DIR=$GITHUB_WORKSPACE/MOD" >> $GITHUB_ENV
+          elif [ "${{ matrix.target }}" = "core" ]; then
+            echo "TARGET_DIR=$GITHUB_WORKSPACE/CORE" >> $GITHUB_ENV
+          fi
+
+      - name: Cache SDK
+        if: matrix.target != 'apk'
+        id: cache-sdk
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TARGET_DIR }}
+          key: ${{ matrix.target }}-sdk  
+
 
       - name: Download SDK if cache miss
-        if: matrix.target != 'apk'
+        if: matrix.target != 'apk' && steps.cache-sdk.outputs.cache-hit != 'true'
         run: |
           set -e
           TARGET_DIR=""
