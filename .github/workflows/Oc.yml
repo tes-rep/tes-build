@@ -489,12 +489,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
 
-        # Hapus artifact setelah berhasil upload ke release
-      - name: Delete all artifacts
-        uses: geekyeggo/delete-artifact@v2
-        with:
-          failOnError: false    
-
+        
       - name: Notif Telegram Build Selesai
         if: success()
         run: |
@@ -540,4 +535,12 @@ jobs:
             Branch/Tag: ${{ github.ref_name }}
             Commit: ${{ github.sha }}
             🔗 Log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+       # Hapus artifact setelah berhasil upload ke release
+      - name: Delete all artifacts
+        uses: geekyeggo/delete-artifact@v2
+        with:
+          failOnError: false
+          useGlob: true
+     
    
