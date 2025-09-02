@@ -430,6 +430,7 @@ jobs:
         with:
           pattern: durasi-*
           path: durasi
+        
 
       - name: Gabungkan durasi build
         run: |
@@ -447,6 +448,7 @@ jobs:
         with:
           pattern: openclash-*
           path: release
+          merge-multiple: true
 
 
       - name: Upload ke Release
