@@ -235,6 +235,7 @@ jobs:
 
       - name: Download SDK if cache miss
         run: |
+          if: matrix.target != 'apk'
           set -e
           TARGET_DIR=""
           if [ "${{ matrix.target }}" == "ipk" ]; then TARGET_DIR="$GITHUB_WORKSPACE/SDK"; fi
@@ -243,7 +244,7 @@ jobs:
           
           curl -SLk --retry 3 "https://github.com/tes-rep/tes-build/releases/download/SDK2/15.tar.bz2" -o /tmp/SDK.tar.bz2
           tar -xjf /tmp/SDK.tar.bz2 -C /tmp
-          mv /tmp/OpenWrt-SDK-* "$GITHUB_WORKSPACE/$TARGET_DIR"
+          mv /tmp/OpenWrt-SDK-* "$TARGET_DIR"
 
       - name: Download & Extract SDK Snapshot (untuk APK)
         if: matrix.target == 'apk'
