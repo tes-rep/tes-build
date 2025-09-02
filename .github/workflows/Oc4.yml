@@ -426,9 +426,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download durasi artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
-          name: durasi-${{ matrix.target }}
+          pattern: durasi-*
           path: durasi
 
       - name: Gabungkan durasi build
@@ -443,17 +443,17 @@ jobs:
 
      
       - name: Download IPK artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
-          name: openclash-${{ matrix.target }}
-          path: release/${{ matrix.target }}
+          pattern: openclash-*
+          path: release
 
 
       - name: Upload ke Release
         id: upload_release
         uses: softprops/action-gh-release@v1
         with:
-          repository: tes-rep/OpenClash
+          repository: tes-rep/Repack_ipk
           tag_name: v${{ needs.check-version.outputs.latest_ver }}
           name: "v${{ needs.check-version.outputs.latest_ver }}"
           body: |
@@ -463,11 +463,8 @@ jobs:
             - **Full Changelog**: https://github.com/vernesong/OpenClash/commits/dev/
             - Commit terakhir: ${{ needs.check-version.outputs.commit_msg }}
             - Build IPK & APK
-          files: |
-            release/ipk/*
-            release/mod/*
-            release/core/*
-            release/apk/*
+          files: 
+            release/*
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
@@ -484,8 +481,8 @@ jobs:
           SEC=$((DURATION % 60))
           
           VER="v${{ needs.check-version.outputs.latest_ver }}"
-          RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/$VER"
-          BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
+          RELEASE_URL="https://github.com/tes-rep/Repack_ipk/releases/tag/$VER"
+          BASE_URL="https://github.com/tes-rep/Repack_ipk/releases/download/$VER"
           OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
           
           
