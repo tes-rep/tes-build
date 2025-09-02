@@ -507,7 +507,7 @@ jobs:
             "$VER" \
             "$OLD_VER" \
             "$START_HUMAN" \
-            "${DURATION_TEXT} \
+            "${DURATION_TEXT}" \
             "$RELEASE_URL" \
             "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" \
             "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" \
