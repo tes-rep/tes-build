@@ -217,6 +217,7 @@ jobs:
       - name: Hitung durasi per target
         run: |
           END=$(date +%s)
+          BUILD_START=${{ steps.start.outputs.start }}
           DURASI=$((END - $BUILD_START))
           printf "⏱ Durasi build %s: %dm %ds\n" \
             "${{ matrix.target }}" "$((DURASI/60))" "$((DURASI%60))" \
