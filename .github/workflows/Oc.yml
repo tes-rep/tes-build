@@ -503,7 +503,7 @@ jobs:
           OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
           
           
-          MSG=$(printf "✅ Build OpenClash Selesai!\nक══════क⊹⊱✫⊰⊹क══════क\nVersi baru: %s\nVersi lama: %s\nक══════क⊹⊱✫⊰⊹क══════क\n🕒 Start: %s\n⏱ Durasi: %dm %ds\nक══════क⊹⊱✫⊰⊹क══════क\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/luci-app-openclash_%s_all.ipk\">Download</a>\n📱 APK: <a href=\"%s/luci-app-openclash-%s.apk\">Download</a>\n📦 MOD: <a href=\"%s/luci-app-openclash_%s_all-mod.ipk\">Download</a>\n📱 CORE: <a href=\"%s/luci-app-openclash_%s_all-core.ipk\">Download</a>" \
+          MSG=$(printf "✅ Build OpenClash Selesai!\nक══════क⊹⊱✫⊰⊹क══════क\nVersi baru: %s\nVersi lama: %s\nक══════क⊹⊱✫⊰⊹क══════क\n🕒 Start: %s\n%s\nक══════क⊹⊱✫⊰⊹क══════क\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/luci-app-openclash_%s_all.ipk\">Download</a>\n📱 APK: <a href=\"%s/luci-app-openclash-%s.apk\">Download</a>\n📦 MOD: <a href=\"%s/luci-app-openclash_%s_all-mod.ipk\">Download</a>\n📱 CORE: <a href=\"%s/luci-app-openclash_%s_all-core.ipk\">Download</a>" \
             "$VER" \
             "$OLD_VER" \
             "$START_HUMAN" \
