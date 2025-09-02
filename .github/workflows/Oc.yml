@@ -214,22 +214,7 @@ jobs:
           echo "build_start=$(date +%s)" >> $GITHUB_OUTPUT
           echo "build_start_human=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_OUTPUT
 
-      - name: Hitung durasi per target
-        run: |
-          END=$(date +%s)
-          BUILD_START=${{ steps.start.outputs.start }}
-          DURASI=$((END - $BUILD_START))
-          printf "⏱ Durasi build %s: %dm %ds\n" \
-            "${{ matrix.target }}" "$((DURASI/60))" "$((DURASI%60))" \
-            > durasi_${{ matrix.target }}.txt
-
-      - name: Upload durasi artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: durasi-${{ matrix.target }}
-          path: durasi_${{ matrix.target }}.txt
-    
-
+      
       - name: Checkout build repo
         uses: actions/checkout@v4
 
@@ -405,11 +390,30 @@ jobs:
 
           cp "$FOUND" "$RELEASE_DIR/$OUT_NAME"
 
+    
+
+      - name: Hitung durasi per target
+        id: duration
+        run: |
+          END=$(date +%s)
+          BUILD_START=${{ steps.start.outputs.build_start }}
+          DURASI=$((END - BUILD_START))
+          MIN=$((DURASI / 60))
+          SEC=$((DURASI % 60))
+          echo "⏱ Durasi build ${{ matrix.target }}: ${MIN}m ${SEC}s" > durasi_${{ matrix.target }}.txt
+
+      - name: Upload durasi artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: durasi-${{ matrix.target }}
+          path: durasi_${{ matrix.target }}.txt
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: openclash-${{ matrix.target }}
-          path: release/${{ matrix.target }}/*
+          path: release/${{ matrix.target }}/*   
+          
 
 
   release:
@@ -417,6 +421,9 @@ jobs:
     if: success() && (needs.check-version.outputs.skip_build == 'false' || needs.check-version.outputs.skip_release == 'false')
     runs-on: ubuntu-latest
     steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Download durasi artifact
         uses: actions/download-artifact@v4
