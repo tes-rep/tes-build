@@ -538,9 +538,12 @@ jobs:
 
        # Hapus artifact setelah berhasil upload ke release
       - name: Delete all artifacts
-        uses: geekyeggo/delete-artifact@v2
+        uses: geekyeggo/delete-artifact@v5
         with:
+          name: |
+              durasi-*
+              openclash-*
           failOnError: false
-          useGlob: true
+          
      
    
