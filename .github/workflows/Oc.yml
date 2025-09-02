@@ -242,9 +242,15 @@ jobs:
       - name: Download SDK if cache miss
         if: steps.download_sdk_ori.outputs.cache-hit != 'true'
         run: |
+          set -e
+          TARGET_DIR=""
+          if [ "${{ matrix.target }}" == "ipk" ]; then TARGET_DIR="$GITHUB_WORKSPACE/SDK"; fi
+          if [ "${{ matrix.target }}" == "mod" ]; then TARGET_DIR="$GITHUB_WORKSPACE/MOD"; fi
+          if [ "${{ matrix.target }}" == "core" ]; then TARGET_DIR="$GITHUB_WORKSPACE/CORE"; fi
+          
           curl -SLk --retry 3 "https://github.com/tes-rep/tes-build/releases/download/SDK2/15.tar.bz2" -o /tmp/SDK.tar.bz2
           tar -xjf /tmp/SDK.tar.bz2 -C /tmp
-          mv /tmp/OpenWrt-SDK-* "$GITHUB_WORKSPACE/ORI"
+          mv /tmp/OpenWrt-SDK-* "$GITHUB_WORKSPACE/$TARGET_DIR"
 
       - name: Download & Extract SDK Snapshot (untuk APK)
         if: matrix.target == 'apk'
@@ -266,13 +272,13 @@ jobs:
           set -e
           TARGET_DIR=""
           if [ "${{ matrix.target }}" == "ipk" ]; then
-            cp -r $GITHUB_WORKSPACE/ORI $GITHUB_WORKSPACE/SDK
+           # cp -r $GITHUB_WORKSPACE/ORI $GITHUB_WORKSPACE/SDK
             TARGET_DIR="$GITHUB_WORKSPACE/SDK"
           elif [ "${{ matrix.target }}" == "mod" ]; then
-            cp -r $GITHUB_WORKSPACE/ORI $GITHUB_WORKSPACE/MOD
+           # cp -r $GITHUB_WORKSPACE/ORI $GITHUB_WORKSPACE/MOD
             TARGET_DIR="$GITHUB_WORKSPACE/MOD"
           elif [ "${{ matrix.target }}" == "core" ]; then
-            cp -r $GITHUB_WORKSPACE/ORI $GITHUB_WORKSPACE/CORE
+           # cp -r $GITHUB_WORKSPACE/ORI $GITHUB_WORKSPACE/CORE
             TARGET_DIR="$GITHUB_WORKSPACE/CORE"
           elif [ "${{ matrix.target }}" == "apk" ]; then
             TARGET_DIR="$GITHUB_WORKSPACE/SNAPSDK"
