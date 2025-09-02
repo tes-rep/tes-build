@@ -234,8 +234,8 @@ jobs:
 
 
       - name: Download SDK if cache miss
+        if: matrix.target != 'apk'
         run: |
-          if: matrix.target != 'apk'
           set -e
           TARGET_DIR=""
           if [ "${{ matrix.target }}" == "ipk" ]; then TARGET_DIR="$GITHUB_WORKSPACE/SDK"; fi
