@@ -214,6 +214,21 @@ jobs:
           echo "build_start=$(date +%s)" >> $GITHUB_OUTPUT
           echo "build_start_human=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_OUTPUT
 
+      - name: Hitung durasi per target
+        run: |
+          END=$(date +%s)
+          DURASI=$((END - $BUILD_START))
+          printf "⏱ Durasi build %s: %dm %ds\n" \
+            "${{ matrix.target }}" "$((DURASI/60))" "$((DURASI%60))" \
+            > durasi_${{ matrix.target }}.txt
+
+      - name: Upload durasi artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: durasi-${{ matrix.target }}
+          path: durasi_${{ matrix.target }}.txt
+    
+
       - name: Checkout build repo
         uses: actions/checkout@v4
 
@@ -402,6 +417,22 @@ jobs:
     if: success() && (needs.check-version.outputs.skip_build == 'false' || needs.check-version.outputs.skip_release == 'false')
     runs-on: ubuntu-latest
     steps:
+
+      - name: Download durasi artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: durasi
+
+      - name: Gabungkan durasi build
+        run: |
+          DURATION_TEXT=""
+          for f in durasi/*/durasi_*.txt; do
+            DURATION_TEXT="$DURATION_TEXT$(cat $f)\n"
+          done
+          echo "DURATION_TEXT<<EOF" >> $GITHUB_ENV
+          echo -e "$DURATION_TEXT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
      
       - name: Download IPK artifact
         uses: actions/download-artifact@v4
@@ -477,7 +508,7 @@ jobs:
             "$VER" \
             "$OLD_VER" \
             "$START_HUMAN" \
-            "$MIN" "$SEC" \
+            "${DURATION_TEXT} \
             "$RELEASE_URL" \
             "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" \
             "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" \
