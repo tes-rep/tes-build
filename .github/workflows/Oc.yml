@@ -222,11 +222,11 @@ jobs:
         if: matrix.target != 'apk'
         run: |
           if [ "${{ matrix.target }}" = "ipk" ]; then
-            echo "TARGET_DIR=$GITHUB_WORKSPACE/SDK" >> $GITHUB_ENV
+            echo "LOKASI=$GITHUB_WORKSPACE/SDK" >> $GITHUB_ENV
           elif [ "${{ matrix.target }}" = "mod" ]; then
-            echo "TARGET_DIR=$GITHUB_WORKSPACE/MOD" >> $GITHUB_ENV
+            echo "LOKASI=$GITHUB_WORKSPACE/MOD" >> $GITHUB_ENV
           elif [ "${{ matrix.target }}" = "core" ]; then
-            echo "TARGET_DIR=$GITHUB_WORKSPACE/CORE" >> $GITHUB_ENV
+            echo "LOKASI=$GITHUB_WORKSPACE/CORE" >> $GITHUB_ENV
           fi
 
       - name: Cache SDK
@@ -234,7 +234,7 @@ jobs:
         id: cache-sdk
         uses: actions/cache@v4
         with:
-          path: ${{ env.TARGET_DIR }}
+          path: ${{ env.LOKASI }}
           key: ${{ matrix.target }}-sdk  
 
 
