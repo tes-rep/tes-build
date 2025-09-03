@@ -44,8 +44,8 @@ on:
         type: choice
         options:
           - tes-rep
-          - kernel54
-          - dirgha80
+          - DIRGHA80
+          - HOUJIE80
 
 jobs:
   sync_driver:
@@ -57,13 +57,13 @@ jobs:
         run: |
           case "${{ github.event.inputs.token_option }}" in
             tes-rep)
-              echo "PAT=${{ secrets.TARGET_REPO_PAT }}" >> $GITHUB_ENV
+              echo "PAT=${{ secrets.TARGET_REPO_INI }}" >> $GITHUB_ENV
               ;;
-            kernel54)
-              echo "PAT=${{ secrets.TARGET_REPO_PAT2 }}" >> $GITHUB_ENV
+            DIRGHA80)
+              echo "PAT=${{ secrets.TARGET_REPO_DIRGHA80 }}" >> $GITHUB_ENV
               ;;
-            dirgha80)
-              echo "PAT=${{ secrets.TARGET_REPO_PAT3 }}" >> $GITHUB_ENV
+            HOUJIE80)
+              echo "PAT=${{ secrets.TARGET_REPO_HOUJIE80 }}" >> $GITHUB_ENV
               ;;
             *)
               echo "::error ::Pilihan token tidak valid!"
