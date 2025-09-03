@@ -1,4 +1,4 @@
-name: Build luci-app-openclash ke tes-rep7
+name: Build luci-app-oc ke dirgha80
 
 on:
   workflow_dispatch:
@@ -193,51 +193,72 @@ jobs:
             -d text="$MSG" \
             -d parse_mode="HTML" \
             -d disable_web_page_preview=true   
-          
+
+      
 
   build:
     needs: check-version
-    if: needs.check-version.outputs.skip_release == 'false'
+    if: needs.check-version.outputs.skip_build == 'false' || needs.check-version.outputs.skip_release == 'false'
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [ipk, apk]
+        target: [ipk, mod, core, apk]
+    outputs:
+      build_start: ${{ steps.start.outputs.build_start }}
+      build_start_human: ${{ steps.start.outputs.build_start_human }}   
 
     steps:
       - name: Catat waktu mulai
+        id: start
         run: |
-          echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
-          echo "BUILD_START_HUMAN=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_ENV
+          echo "build_start=$(date +%s)" >> $GITHUB_OUTPUT
+          echo "build_start_human=$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_OUTPUT
 
       
-      # 1. Checkout repo build workflow (misalnya tes-rep/tes-build)
       - name: Checkout build repo
         uses: actions/checkout@v4
-
-      # ----------------- IPK Build -----------------
-      - name: Cache SDK lama
-        if: matrix.target == 'ipk'
-        id: cache_ipk
+        
+      - name: Set TARGET_DIR
+        run: |
+          if [ "${{ matrix.target }}" = "ipk" ]; then
+            echo "TARGET_DIR=$GITHUB_WORKSPACE/SDK" >> $GITHUB_ENV
+          elif [ "${{ matrix.target }}" = "mod" ]; then
+            echo "TARGET_DIR=$GITHUB_WORKSPACE/MOD" >> $GITHUB_ENV
+          elif [ "${{ matrix.target }}" = "core" ]; then
+            echo "TARGET_DIR=$GITHUB_WORKSPACE/CORE" >> $GITHUB_ENV
+          elif [ "${{ matrix.target }}" = "apk" ]; then
+            echo "TARGET_DIR=$GITHUB_WORKSPACE/SNAPSDK" >> $GITHUB_ENV  
+          fi  
+        
+      - name: cache ipk
+        id: download_sdk_apk
         uses: actions/cache@v3
         with:
-          path: ${{ github.workspace }}/SDK
-          key: sdk-old-${{ needs.check-version.outputs.latest_ver }}
+          path: ${{ env.TARGET_DIR }}
+          key: sdk-snap-${{ matrix.target }}  
 
-      - name: Download & Extract SDK 24.10.2 (x86/generic)
-        if: matrix.target == 'ipk' && steps.cache_ipk.outputs.cache-hit != 'true'
+
+      - name: Download SDK if cache miss
+        if: steps.download_sdk_apk.outputs.cache-hit != 'true'
         run: |
-          mkdir -p /tmp/sdk_old
-          BASE_URL="https://github.com/tes-rep/tes-build/releases/download/SDK2/stabil.tar.zst"
-          # SDK_NAME=$(curl -s $BASE_URL/ | grep -oE 'openwrt-sdk-24.10.2-x86-64[^"]+\.tar\.zst' | head -n 1)
-          curl -SLk "$BASE_URL" -o /tmp/sdk_64.tar.zst
-          tar --zstd -xf /tmp/sdk_64.tar.zst -C /tmp/sdk_old
-          mv /tmp/sdk_old/openwrt-sdk-* "$GITHUB_WORKSPACE/SDK"
+          set -e
+          if [ "${{ matrix.target }}" == "apk" ]; then
+          curl -SLk --retry 3 "https://github.com/tes-rep/tes-build/releases/download/SDK2/snap.tar.zst" -o /tmp/SNAPSDK.tar.zst
+          tar --zstd -xf /tmp/SNAPSDK.tar.zst -C /tmp
+          mv /tmp/openwrt-sdk-* "$TARGET_DIR"
+          else
+          curl -SLk --retry 3 "https://github.com/tes-rep/tes-build/releases/download/SDK2/15.tar.bz2" -o /tmp/SDK.tar.bz2
+          tar -xjf /tmp/SDK.tar.bz2 -C /tmp
+          mv /tmp/OpenWrt-SDK-* "$TARGET_DIR"
+          fi
 
-
-      - name: Clone luci-app-openclash IPK
-        if: matrix.target == 'ipk'
+   
+      
+      - name: Clone luci-app-openclash
         run: |
-          cd $GITHUB_WORKSPACE/SDK/package
+          set -e
+          
+          cd "$TARGET_DIR/package"
           if [ -d "luci-app-openclash" ]; then
             cd luci-app-openclash
             git fetch --depth 1 origin dev
@@ -246,138 +267,165 @@ jobs:
             git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
             cd luci-app-openclash && git sparse-checkout set luci-app-openclash
           fi
-
-      - name: Tambahkan postinst patch
-        if: matrix.target == 'ipk'
-        run: |
-          # menambahkan oceditor.php
-          PATCH_SRC2="$GITHUB_WORKSPACE/data/openclash/oceditor.php"
-          TARGET_DIR2="$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/root/www/tinyfm"
-    
-          mkdir -p "$TARGET_DIR2"
-          cp "$PATCH_SRC2" "$TARGET_DIR2/"
           
-          # menambahkan ocmod.sh
-          PATCH_SRC="$GITHUB_WORKSPACE/data/openclash/ocmod.sh"
-          TARGET_DIR="$GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/root/usr/share/openclash"
-    
-          mkdir -p "$TARGET_DIR"
-          cp "$PATCH_SRC" "$TARGET_DIR/"
-          chmod +x "$TARGET_DIR/ocmod.sh"
-    
-          # Tambahkan postinst di Makefile
-          cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash
-          # --- Hapus postinst-pkg kalau ada ---
-          sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' Makefile
+      - name: Tambahkan file patch (MOD, CORE, APK)
+        if: matrix.target == 'mod' || matrix.target == 'core' || matrix.target == 'apk'
+        run: |
+          set -e
+          
 
-          # --- Tambahkan postinst baru ---
-              cat >> Makefile <<'EOF'
+          mkdir -p "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash/root/www/tinyfm"
+          cp "$GITHUB_WORKSPACE/data/openclash/oceditor.php" "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash/root/www/tinyfm/"
+          
+          mkdir -p "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash/root/usr/share/openclash"
+          cp "$GITHUB_WORKSPACE/data/openclash/ocmod.sh" "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash/root/usr/share/openclash/"
+          chmod +x "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash/root/usr/share/openclash/ocmod.sh"
+          
+          # Hapus postinst-pkg jika ada, lalu tambahkan postinst baru di Makefile
+          cd "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash"
+          sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' Makefile
+          cat >> Makefile <<'EOF'
           define Package/luci-app-openclash/postinst
           #!/bin/sh
           [ -n "$$IPKG_INSTROOT" ] || {
               chmod +x /usr/share/openclash/ocmod.sh
               sh /usr/share/openclash/ocmod.sh
-              rm -f /usr/share/openclash/ocmod.sh   # hapus setelah jalan
+              rm -f /usr/share/openclash/ocmod.sh
           }
           exit 0
           endef
           EOF
 
-      - name: Compile po2lmo (IPK)
-        if: matrix.target == 'ipk'
+      - name: Download mihomo core (CORE, APK)
+        if: matrix.target == 'core' || matrix.target == 'apk'
         run: |
-          cd $GITHUB_WORKSPACE/SDK/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
+          set -e
+          
+          cd "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash"
+          mkdir -p root/etc/openclash/core
+          TAG="Prerelease-Alpha"
+          CORE_URL=$(curl -s https://api.github.com/repos/tes-rep/mihomo/releases/tags/$TAG | jq -r '.assets[] | select(.name | test("linux-arm64.*gz$")) | .browser_download_url')
+          
+          rm -f root/etc/openclash/core/clash_meta
+          wget -O root/etc/openclash/core/clash_meta.gz "$CORE_URL"
+          gunzip root/etc/openclash/core/clash_meta.gz
+          chmod +x root/etc/openclash/core/clash_meta
+
+      - name: Compile po2lmo
+        run: |
+          set -e
+          cd "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash/tools/po2lmo"
           make && sudo make install
 
-      - name: Compile luci-app-openclash (IPK)
-        if: matrix.target == 'ipk'
+      - name: Compile luci-app-openclash
         run: |
-          cd $GITHUB_WORKSPACE/SDK
+          set -e
+          FILE_SUFFIX=""
+          if [ "${{ matrix.target }}" == "ipk" ]; then
+            FILE_SUFFIX="_all.ipk"
+          elif [ "${{ matrix.target }}" == "mod" ]; then
+            FILE_SUFFIX="_all-mod.ipk"
+          elif [ "${{ matrix.target }}" == "core" ]; then
+            FILE_SUFFIX="_all-core.ipk"
+          elif [ "${{ matrix.target }}" == "apk" ]; then
+            FILE_SUFFIX=".apk"
+          fi
+          
+          cd "$TARGET_DIR"
+          if [ "${{ matrix.target }}" == "apk" ]; then
           make defconfig
           make package/luci-app-openclash/luci-app-openclash/compile V=99
-          mkdir -p $GITHUB_WORKSPACE/release
-          find bin/ -type f -name "luci-app-openclash_*.ipk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all.ipk \;
-
-      # ----------------- APK Build -----------------
-      - name: Cache SDK snapshot
-        if: matrix.target == 'apk'
-        id: cache_apk
-        uses: actions/cache@v3
-        with:
-          path: ${{ github.workspace }}/SNAPSDK
-          key: sdk-snap-${{ needs.check-version.outputs.latest_ver }}
-
-      - name: Download & Ekstrak SDK Snapshot
-        if: matrix.target == 'apk' && steps.cache_apk.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p /tmp/sdk_snap
-          BASE_URL="https://github.com/tes-rep/tes-build/releases/download/SDK2/snap.tar.zst"
-          # SDK_NAME=$(curl -s $BASE_URL/ | grep -oE 'openwrt-sdk-x86-64[^"]+\.tar\.zst' | head -n 1)
-          curl -SLk "$BASE_URL" -o /tmp/SNAPSDK.tar.zst
-          tar --zstd -xf /tmp/SNAPSDK.tar.zst -C /tmp/sdk_snap
-          mv /tmp/sdk_snap/openwrt-sdk-* $GITHUB_WORKSPACE/SNAPSDK
-
-      - name: Clone luci-app-openclash (APK)
-        if: matrix.target == 'apk'
-        run: |
-          cd $GITHUB_WORKSPACE/SNAPSDK/package
-          if [ -d "luci-app-openclash" ]; then
-            cd luci-app-openclash
-            git fetch --depth 1 origin dev
-            git reset --hard origin/dev
           else
-            git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
-            cd luci-app-openclash && git sparse-checkout set luci-app-openclash
+          make package/luci-app-openclash/luci-app-openclash/compile V=99
+          fi
+          
+          # Cari output file dengan pola lebih fleksibel
+          if [ "${{ matrix.target }}" = "apk" ]; then
+            FOUND=$(find bin/ -type f -name "*.apk" | head -n1 || true)
+            OUT_NAME="luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk"
+          else
+            FOUND=$(find bin/ -type f -name "luci-app-openclash*.ipk" | head -n1 || true)
+            OUT_NAME="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}${FILE_SUFFIX}"
           fi
 
-      - name: Tambahkan postinst patch
-        if: matrix.target == 'apk'
-        run: |
-          PATCH_SRC="$GITHUB_WORKSPACE/data/openclash/ocmod.sh"
-          TARGET_DIR="$GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/root/usr/share/openclash"
+          if [ -z "$FOUND" ]; then
+            echo "❌ Output tidak ditemukan di folder bin/"
+            ls -R bin/ || true
+            exit 1
+          fi
+
+          # pastikan folder release ada
+          RELEASE_DIR="$GITHUB_WORKSPACE/release/${{ matrix.target }}"
+          mkdir -p "$RELEASE_DIR"
+
+          cp "$FOUND" "$RELEASE_DIR/$OUT_NAME"
+
     
-          mkdir -p "$TARGET_DIR"
-          cp "$PATCH_SRC" "$TARGET_DIR/"
-          chmod +x "$TARGET_DIR/ocmod.sh"
+
+      - name: Hitung durasi per target
+        id: duration
+        run: |
+          END=$(date +%s)
+          BUILD_START=${{ steps.start.outputs.build_start }}
+          DURASI=$((END - BUILD_START))
+          MIN=$((DURASI / 60))
+          SEC=$((DURASI % 60))
+          echo "⏱ Durasi build ${{ matrix.target }}: ${MIN}m ${SEC}s" > durasi_${{ matrix.target }}.txt
+
+      - name: Upload durasi artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: durasi-${{ matrix.target }}
+          path: durasi_${{ matrix.target }}.txt
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openclash-${{ matrix.target }}
+          path: release/${{ matrix.target }}/*   
           
-           # menambahkan oceditor.php
-          PATCH_SRC2="$GITHUB_WORKSPACE/data/openclash/oceditor.php"
-          TARGET_DIR2="$GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/root/www/tinyfm"
-    
-          mkdir -p "$TARGET_DIR2"
-          cp "$PATCH_SRC2" "$TARGET_DIR2/"
-          # Tambahkan postinst di Makefile
-          cd $GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash
-          sed -i '/define Package\/luci-app-openclash\/postinst/d' Makefile
-          echo 'define Package/luci-app-openclash/postinst' >> Makefile
-          echo '#!/bin/sh' >> Makefile
-          echo 'chmod +x /usr/share/openclash/ocmod.sh' >> Makefile
-          echo 'sh /usr/share/openclash/ocmod.sh' >> Makefile
-          echo 'exit 0' >> Makefile
-          echo 'endef' >> Makefile
-    
 
-      - name: Compile po2lmo (APK)
-        if: matrix.target == 'apk'
+
+  release:
+    needs: [build, check-version]
+    if: success() && (needs.check-version.outputs.skip_build == 'false' || needs.check-version.outputs.skip_release == 'false')
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download durasi artifact
+        uses: actions/download-artifact@v5
+        with:
+          pattern: durasi-*
+          path: durasi
+        
+
+      - name: Gabungkan durasi build
         run: |
-          cd $GITHUB_WORKSPACE/SNAPSDK/package/luci-app-openclash/luci-app-openclash/tools/po2lmo
-          make && sudo make install
+          DURATION_TEXT=""
+          for f in durasi/*/durasi_*.txt; do
+            DURATION_TEXT="$DURATION_TEXT$(cat $f)\n"
+          done
+          echo "DURATION_TEXT<<EOF" >> $GITHUB_ENV
+          echo -e "$DURATION_TEXT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
-      - name: Compile luci-app-openclash (APK)
-        if: matrix.target == 'apk'
-        run: |
-          cd $GITHUB_WORKSPACE/SNAPSDK
-          make defconfig
-          make package/luci-app-openclash/luci-app-openclash/compile V=99
-          mkdir -p $GITHUB_WORKSPACE/release
-          find bin/ -type f -name "luci-app-openclash*.apk" -exec cp {} $GITHUB_WORKSPACE/release/luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk \;
+     
+      - name: Download IPK artifact
+        uses: actions/download-artifact@v5
+        with:
+          pattern: openclash-*
+          path: release
+          merge-multiple: true
 
-      # ----------------- Upload Release -----------------
+
       - name: Upload ke Release
         id: upload_release
         uses: softprops/action-gh-release@v1
         with:
-          repository: tes-rep/OpenClash
+          repository: Dirgha80/OpenClash
           tag_name: v${{ needs.check-version.outputs.latest_ver }}
           name: "v${{ needs.check-version.outputs.latest_ver }}"
           body: |
@@ -387,41 +435,67 @@ jobs:
             - **Full Changelog**: https://github.com/vernesong/OpenClash/commits/dev/
             - Commit terakhir: ${{ needs.check-version.outputs.commit_msg }}
             - Build IPK & APK
-          files: release/*
+          files: 
+            release/*
           prerelease: true
         env:
-          GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
+          GITHUB_TOKEN: ${{ secrets.TARGET_REPO_DIRGHA80 }}
 
-      # ----------------- Telegram Notif -----------------
-      
+        
       - name: Notif Telegram Build Selesai
         if: success()
         run: |
           BUILD_END=$(date +%s)
-          DURATION=$((BUILD_END - BUILD_START))
+          START=${{ needs.build.outputs.build_start }}
+          START_HUMAN="${{ needs.build.outputs.build_start_human }}"
+          DURATION=$((BUILD_END - START))
           MIN=$((DURATION / 60))
           SEC=$((DURATION % 60))
-
+          
           VER="v${{ needs.check-version.outputs.latest_ver }}"
-          RELEASE_URL="https://github.com/tes-rep/OpenClash/releases/tag/$VER"
-          BASE_URL="https://github.com/tes-rep/OpenClash/releases/download/$VER"
+          RELEASE_URL="https://github.com/Dirgha80/OpenClash/releases/tag/$VER"
+          BASE_URL="https://github.com/Dirgha80/OpenClash/releases/download/$VER"
           OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
-
-          IPK_FILE="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}_all.ipk"
-          APK_FILE="luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk"
-
-          MSG=$(printf "✅ Build OpenClash Selesai!\nक══════क⊹⊱✫⊰⊹क══════क\nVersi baru: %s\nVersi lama: %s\nक══════क⊹⊱✫⊰⊹क══════क\n🕒 Start: %s\n⏱ Durasi: %dm %ds\nक══════क⊹⊱✫⊰⊹क══════क\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/%s\">Download</a>\n📱 APK: <a href=\"%s/%s\">Download</a>" \
+          
+          
+          MSG=$(printf "✅ Build OpenClash Selesai!\nक══════क⊹⊱✫⊰⊹क══════क\nVersi baru: %s\nVersi lama: %s\nक══════क⊹⊱✫⊰⊹क══════क\n🕒 Start: %s\n%s\nक══════क⊹⊱✫⊰⊹क══════क\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/luci-app-openclash_%s_all.ipk\">Download</a>\n📱 APK: <a href=\"%s/luci-app-openclash-%s.apk\">Download</a>\n📦 MOD: <a href=\"%s/luci-app-openclash_%s_all-mod.ipk\">Download</a>\n📱 CORE: <a href=\"%s/luci-app-openclash_%s_all-core.ipk\">Download</a>" \
             "$VER" \
             "$OLD_VER" \
-            "$BUILD_START_HUMAN" \
-            "$MIN" "$SEC" \
+            "$START_HUMAN" \
+            "${DURATION_TEXT}" \
             "$RELEASE_URL" \
-            "$BASE_URL" "$IPK_FILE" \
-            "$BASE_URL" "$APK_FILE")
-            
-
+            "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" \
+            "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" \
+            "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" \
+            "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" )
+          
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
             -d text="$MSG" \
             -d parse_mode="HTML" \
             -d disable_web_page_preview=true
+
+      - name: Kirim notif ke Telegram kalau gagal
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ❌ Build gagal di ${{ github.repository }}
+            Workflow: ${{ github.workflow }}
+            Branch/Tag: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            🔗 Log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+       # Hapus artifact setelah berhasil upload ke release
+      - name: Delete all artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+              durasi-*
+              openclash-*
+          failOnError: false
+          
+     
+   
