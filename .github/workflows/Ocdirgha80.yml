@@ -232,7 +232,7 @@ jobs:
         
       - name: cache ipk
         id: download_sdk_apk
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.TARGET_DIR }}
           key: sdk-snap-${{ matrix.target }}  
