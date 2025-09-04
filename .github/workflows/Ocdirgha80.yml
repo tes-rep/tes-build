@@ -284,6 +284,7 @@ jobs:
           # Hapus postinst-pkg jika ada, lalu tambahkan postinst baru di Makefile
           cd "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash"
           sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' Makefile
+          sed -i '/define Package\/luci-app-openclash\/postinst/,/endef/d' Makefile
           cat >> Makefile <<'EOF'
           define Package/luci-app-openclash/postinst
           #!/bin/sh
