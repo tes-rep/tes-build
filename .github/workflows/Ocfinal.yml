@@ -317,13 +317,13 @@ jobs:
           # Hapus postinst-pkg jika ada, lalu tambahkan postinst baru di Makefile
           cd "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash"
           sed -i '/define Package\/$(PKG_NAME)\/postinst/,/endef/{
-            /endef/i [ -n "$$IPKG_INSTROOT" ] || {
-            /endef/i \    chmod +x /usr/share/openclash/ocmod.sh
-            /endef/i \    sh /usr/share/openclash/ocmod.sh
-            /endef/i \    rm -f /usr/share/openclash/ocmod.sh
-            /endef/i }
-            /endef/i exit 0
+            /exit 0/i [ -n "$$IPKG_INSTROOT" ] || {
+            /exit 0/i \    chmod +x /usr/share/openclash/ocmod.sh
+            /exit 0/i \    sh /usr/share/openclash/ocmod.sh
+            /exit 0/i \    rm -f /usr/share/openclash/ocmod.sh
+            /exit 0/i }
           }' Makefile
+
 
 
       - name: Download mihomo core (CORE, APK)
