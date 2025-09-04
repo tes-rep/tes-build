@@ -409,6 +409,7 @@ jobs:
           mkdir -p "$RELEASE_DIR"
 
           cp "$FOUND" "$RELEASE_DIR/$OUT_NAME"
+          cp "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash/Makefile" "$RELEASE_DIR/Makefile"
 
     
 
@@ -433,6 +434,12 @@ jobs:
         with:
           name: openclash-${{ matrix.target }}
           path: release/${{ matrix.target }}/*   
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Makefile-${{ matrix.target }}
+          path: release/${{ matrix.target }}/*      
           
 
 
