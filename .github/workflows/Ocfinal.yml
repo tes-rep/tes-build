@@ -433,7 +433,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Makefile-${{ matrix.target }}
-          path: release/${{ matrix.target }}/Makefile     
+          path: release/${{ matrix.target }}/Makefile-${{ matrix.target }}     
           
 
 
