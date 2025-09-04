@@ -285,7 +285,7 @@ jobs:
           
           cd "$TARGET_DIR/package"
           if [ -d "luci-app-openclash" ]; then
-            rm -f /luci-app-openclash
+            rm -rf luci-app-openclash
             git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
             cd luci-app-openclash && git sparse-checkout set luci-app-openclash
           else
