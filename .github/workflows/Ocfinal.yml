@@ -284,14 +284,11 @@ jobs:
           fi
           
           cd "$TARGET_DIR/package"
-          if [ -d "luci-app-openclash" ]; then
-            cd luci-app-openclash
-            git fetch --depth 1 origin dev
-            git reset --hard origin/dev
-          else
+          rm -f luci-app-openclash
+          
             git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
             cd luci-app-openclash && git sparse-checkout set luci-app-openclash
-          fi
+          
           
       - name: Tambahkan file patch (MOD, CORE, APK)
         if: matrix.target == 'mod' || matrix.target == 'core' || matrix.target == 'apk'
@@ -315,19 +312,18 @@ jobs:
           
           # Hapus postinst-pkg jika ada, lalu tambahkan postinst baru di Makefile
           cd "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash"
-          sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' Makefile
-          sed -i '/define Package\/$(PKG_NAME)\/postinst/,/endef/d' Makefile
-          cat >> Makefile <<'EOF'
-          define Package/$(PKG_NAME)/postinst
-          #!/bin/sh
-          [ -n "$$IPKG_INSTROOT" ] || {
-              chmod +x /usr/share/openclash/ocmod.sh
-              sh /usr/share/openclash/ocmod.sh
-              rm -f /usr/share/openclash/ocmod.sh
-          }
-          exit 0
+          # Gunakan sed untuk mengganti seluruh blok `postinst`
+          sed -i '/define Package\/luci-app-openclash\/postinst/,/endef/c\
+          define Package/luci-app-openclash/postinst\
+          \t#!/bin/sh\
+          \t[ -n "$$IPKG_INSTROOT" ] || {\
+          \t\tchmod +x /usr/share/openclash/ocmod.sh\
+          \t\tsh /usr/share/openclash/ocmod.sh\
+          \t\trm -f /usr/share/openclash/ocmod.sh\
+          \t}\
+          \texit 0\
           endef
-          EOF
+          ' Makefile
 
       - name: Download mihomo core (CORE, APK)
         if: matrix.target == 'core' || matrix.target == 'apk'
