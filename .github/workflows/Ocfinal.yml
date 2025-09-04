@@ -284,10 +284,12 @@ jobs:
           fi
           
           cd "$TARGET_DIR/package"
-          rm -f luci-app-openclash
-          
+          if [ -d "luci-app-openclash" ]; then
+            rm -f luci-app-openclash
+          else
             git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
             cd luci-app-openclash && git sparse-checkout set luci-app-openclash
+           fi 
           
           
       - name: Tambahkan file patch (MOD, CORE, APK)
