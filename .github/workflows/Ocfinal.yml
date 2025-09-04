@@ -284,14 +284,10 @@ jobs:
           fi
           
           cd "$TARGET_DIR/package"
-          if [ -d "luci-app-openclash" ]; then
             rm -rf luci-app-openclash
             git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
             cd luci-app-openclash && git sparse-checkout set luci-app-openclash
-          else
-            git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash luci-app-openclash
-            cd luci-app-openclash && git sparse-checkout set luci-app-openclash
-           fi 
+          
           
           
       - name: Tambahkan file patch (MOD, CORE, APK)
@@ -316,6 +312,7 @@ jobs:
           
           # Hapus postinst-pkg jika ada, lalu tambahkan postinst baru di Makefile
           cd "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash"
+          if ! grep -q "ocmod.sh" Makefile; then
           sed -i '/define Package\/$(PKG_NAME)\/postinst/,/endef/{
             /exit 0/i [ -n "$$IPKG_INSTROOT" ] || {
             /exit 0/i \    chmod +x /usr/share/openclash/ocmod.sh
@@ -323,7 +320,7 @@ jobs:
             /exit 0/i \    rm -f /usr/share/openclash/ocmod.sh
             /exit 0/i }
           }' Makefile
-
+          fi
 
 
       - name: Download mihomo core (CORE, APK)
