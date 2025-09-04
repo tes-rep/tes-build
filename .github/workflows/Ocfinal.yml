@@ -553,6 +553,7 @@ jobs:
           name: |
               durasi-*
               openclash-*
+              Makefile-*
           failOnError: false
           
      
