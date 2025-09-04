@@ -318,7 +318,7 @@ jobs:
           sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' Makefile
           sed -i '/define Package\/luci-app-openclash\/postinst/,/endef/d' Makefile
           cat >> Makefile <<'EOF'
-          define Package/luci-app-openclash/postinst
+          define Package/$(PKG_NAME)/postinst
           #!/bin/sh
           [ -n "$$IPKG_INSTROOT" ] || {
               chmod +x /usr/share/openclash/ocmod.sh
