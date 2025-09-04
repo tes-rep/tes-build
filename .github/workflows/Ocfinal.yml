@@ -315,7 +315,7 @@ jobs:
           chmod +x "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash/root/usr/share/openclash/ocmod.sh"
           
           # Hapus postinst-pkg jika ada, lalu tambahkan postinst baru di Makefile
-          sed -i '/define Package\/.*\/postinst/,/endef/{
+          sed -i '/define Package\/$(PKG_NAME)\/postinst/,/endef/{
             /endef/i [ -n "$$IPKG_INSTROOT" ] || {
             /endef/i \    chmod +x /usr/share/openclash/ocmod.sh
             /endef/i \    sh /usr/share/openclash/ocmod.sh
