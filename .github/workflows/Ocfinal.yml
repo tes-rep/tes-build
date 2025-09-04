@@ -317,8 +317,8 @@ jobs:
           # Hapus postinst-pkg jika ada, lalu tambahkan postinst baru di Makefile
           cd "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash"
           # Gunakan sed untuk mengganti seluruh blok `postinst`
-          sed -i '/define Package\/luci-app-openclash\/postinst/,/endef/c\
-          define Package/luci-app-openclash/postinst\
+          sed -i '/define Package\/$(PKG_NAME)\/postinst/,/endef/c\
+          define Package/$(PKG_NAME)/postinst\
           \t#!/bin/sh\
           \t[ -n "$$IPKG_INSTROOT" ] || {\
           \t\tchmod +x /usr/share/openclash/ocmod.sh\
