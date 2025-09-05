@@ -282,20 +282,17 @@ jobs:
           chmod +x "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash/root/usr/share/openclash/ocmod.sh"
           
           # Hapus postinst-pkg jika ada, lalu tambahkan postinst baru di Makefile
+          # Hapus postinst-pkg jika ada, lalu tambahkan postinst baru di Makefile
           cd "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash"
-          sed -i '/define Package\/luci-app-openclash\/postinst-pkg/,/endef/d' Makefile
-          sed -i '/define Package\/luci-app-openclash\/postinst/,/endef/d' Makefile
-          cat >> Makefile <<'EOF'
-          define Package/$(PKG_NAME)/postinst
-          #!/bin/sh
-          [ -n "$$IPKG_INSTROOT" ] || {
-              chmod +x /usr/share/openclash/ocmod.sh
-              sh /usr/share/openclash/ocmod.sh
-              rm -f /usr/share/openclash/ocmod.sh
-          }
-          exit 0
-          endef
-          EOF
+          if ! grep -q "ocmod.sh" Makefile; then
+          sed -i '/define Package\/$(PKG_NAME)\/postinst/,/endef/{
+            /exit 0/i [ -n "$$IPKG_INSTROOT" ] || {
+            /exit 0/i \    chmod +x /usr/share/openclash/ocmod.sh
+            /exit 0/i \    sh /usr/share/openclash/ocmod.sh
+            /exit 0/i \    rm -f /usr/share/openclash/ocmod.sh
+            /exit 0/i }
+          }' Makefile
+          fi
 
       - name: Download mihomo core (CORE, APK)
         if: matrix.target == 'core' || matrix.target == 'apk'
