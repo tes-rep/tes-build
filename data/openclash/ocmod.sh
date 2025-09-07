@@ -127,6 +127,15 @@ create_safe_openclash_symlink() {
 }
 create_safe_openclash_symlink
 
+# === RESTART OPENCLASH ===
+echo "[✔] Restarting OpenClash..."
+log_message "Restarting OpenClash service"
+/etc/init.d/openclash restart && echo "[✓] OpenClash berhasil direstart" && log_message "OpenClash restart sukses" || { 
+  echo "[✘] Gagal merestart OpenClash"; 
+  log_message "Gagal merestart OpenClash"; 
+}
+
+
 echo "[✅] Semua patch berhasil diterapkan!"
 log_message "Semua patch berhasil diterapkan!"
 
