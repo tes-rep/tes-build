@@ -1663,7 +1663,7 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
     
-    BOT_TOKEN = os.getenv("BOT_TOKEN")
+    BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
     if not BOT_TOKEN:
         print("❌ ERROR: BOT_TOKEN not found in environment variables")
         print("💡 Create a .env file with: BOT_TOKEN=your_bot_token")
@@ -1675,4 +1675,5 @@ if __name__ == "__main__":
     # Start the bot
     bot = MyXLBot(BOT_TOKEN)
     print("🤖 MyXL Telegram Bot started...")
+
     bot.run()
