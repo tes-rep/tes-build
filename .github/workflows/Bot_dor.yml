@@ -29,4 +29,5 @@ jobs:
         run: |
           echo "🚀 Menjalankan bot Telegram..."
           cd BOTDOR
+          pip install -r requirements.txt
           python botdor.py
