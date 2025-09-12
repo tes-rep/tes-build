@@ -1,10 +1,10 @@
-name: Diff & Apply Patch
+name: Diff, Apply Patch & Create PR
 
 on:
   workflow_dispatch:
     inputs:
       repo_a:
-        description: 'Repo A (contoh: user/repo-a)'
+        description: 'Repo A (target patch)'
         required: true
         default: 'user/repo-a'
       branch_a:
@@ -12,23 +12,27 @@ on:
         required: true
         default: 'main'
       repo_b:
-        description: 'Repo B (contoh: user/repo-b)'
+        description: 'Repo B (sumber patch)'
         required: true
         default: 'user/repo-b'
       branch_b:
         description: 'Branch di Repo B'
         required: true
         default: 'main'
+      split_lines:
+        description: 'Jumlah baris per bagian patch (0 = satu file)'
+        required: false
+        default: 0
 
 jobs:
-  diff-and-apply:
+  diff-apply:
     runs-on: ubuntu-latest
     permissions:
-      contents: write       # supaya bisa push branch baru
-      pull-requests: write  # supaya bisa bikin PR
+      contents: write       # push branch baru
+      pull-requests: write  # buat PR
 
     steps:
-      # 1. Checkout Repo A (target patch)
+      # 1. Checkout Repo A
       - name: Checkout Repo A
         uses: actions/checkout@v4
         with:
@@ -36,8 +40,9 @@ jobs:
           ref: ${{ github.event.inputs.branch_a }}
           token: ${{ secrets.TARGET_REPO_HOUJIE80 }}
           path: repo-a
+          fetch-depth: 0
 
-      # 2. Checkout Repo B (sumber patch)
+      # 2. Checkout Repo B
       - name: Checkout Repo B
         uses: actions/checkout@v4
         with:
@@ -45,36 +50,64 @@ jobs:
           ref: ${{ github.event.inputs.branch_b }}
           token: ${{ secrets.GITHUB_TOKEN }}
           path: repo-b
+          fetch-depth: 0
 
-      # 3. Buat patch
+      # 3. Generate patch
       - name: Generate patch
         run: |
           diff -ruN repo-a repo-b > changes.patch || true
-          echo "Patch dibuat: $(wc -l < changes.patch) baris"
+          PATCH_LINES=$(wc -l < changes.patch)
+          echo "Patch dibuat: $PATCH_LINES baris"
 
-      # 4. Terapkan patch ke Repo A
-      - name: Apply patch
+          if [ "${{ github.event.inputs.split_lines }}" != "0" ]; then
+            split -l ${{ github.event.inputs.split_lines }} changes.patch changes-part-
+          fi
+
+      # 4. Compress patch / parts
+      - name: Zip patch
+        run: |
+          if [ "${{ github.event.inputs.split_lines }}" != "0" ]; then
+            zip patches.zip changes-part-*
+          else
+            zip patches.zip changes.patch
+          fi
+
+      # 5. Upload artifact
+      - name: Upload patch artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: diff-patch
+          path: patches.zip
+
+      # 6. Apply patch to new branch in Repo A
+      - name: Apply patch & Commit
         working-directory: repo-a
         run: |
-          cp ../changes.patch .
-          patch --batch -p1 < changes.patch || true
+          git checkout ${{ github.event.inputs.branch_a }}
+          git checkout -b apply-patch-${{ github.run_id }}
+
+          if [ "${{ github.event.inputs.split_lines }}" != "0" ]; then
+            cat ../changes-part-* > full-changes.patch
+            PATCH_FILE=full-changes.patch
+          else
+            PATCH_FILE=../changes.patch
+          fi
+
+          patch --batch -p1 < $PATCH_FILE || true
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      # 5. Commit & push ke branch baru
-      - name: Commit & Push changes
-        working-directory: repo-a
-        run: |
-          git checkout -b apply-patch-${{ github.run_id }}
           git add -A
           if git diff --cached --quiet; then
             echo "⚠️ Tidak ada perubahan setelah patch"
             exit 0
           fi
+
           git commit -m "Apply patch from ${{ github.event.inputs.repo_b }} (${{ github.event.inputs.branch_b }})"
           git push origin apply-patch-${{ github.run_id }}
 
-      # 6. Buat Pull Request
+      # 7. Create Pull Request
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
@@ -90,3 +123,24 @@ jobs:
             - **${{ github.event.inputs.repo_b }} [${{ github.event.inputs.branch_b }}]**
 
             ⚙️ Generated automatically by GitHub Actions.
+
+      # 8. Preview patch in summary
+      - name: Add patch preview to summary
+        run: |
+          {
+            echo "## 🔍 Patch Preview (200 baris pertama)"
+            echo ""
+            echo "\`\`\`diff"
+            head -n 200 ../changes.patch
+            echo "\`\`\`"
+            echo ""
+            echo "📦 Full patch tersedia di artifact: **patches.zip**"
+            if [ "${{ github.event.inputs.split_lines }}" != "0" ]; then
+              echo "⚙️ Patch dipecah per ${{ github.event.inputs.split_lines }} baris"
+            fi
+            echo ""
+            echo "👉 Terapkan patch manual ke repo A dengan:"
+            echo "\`\`\`bash"
+            echo "patch -p1 < changes.patch"
+            echo "\`\`\`"
+          } >> $GITHUB_STEP_SUMMARY
