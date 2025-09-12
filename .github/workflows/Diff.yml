@@ -34,7 +34,7 @@ jobs:
         with:
           repository: ${{ github.event.inputs.repo_a }}
           ref: ${{ github.event.inputs.branch_a }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ TARGET_REPO_HOUJIE80 }}
           path: repo-a
 
       # 2. Checkout Repo B (sumber patch)
