@@ -48,7 +48,7 @@ jobs:
         with:
           repository: ${{ github.event.inputs.repo_b }}
           ref: ${{ github.event.inputs.branch_b }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.TARGET_REPO_INI }}
           path: repo-b
           fetch-depth: 0
 
