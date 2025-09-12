@@ -111,7 +111,7 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.TARGET_REPO_HOUJIE80 }}
           repository: ${{ github.event.inputs.repo_a }}
           base: ${{ github.event.inputs.branch_a }}
           branch: apply-patch-${{ github.run_id }}
