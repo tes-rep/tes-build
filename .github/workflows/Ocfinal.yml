@@ -429,11 +429,11 @@ jobs:
           name: openclash-${{ matrix.target }}
           path: release/${{ matrix.target }}/*   
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: Makefile-${{ matrix.target }}
-          path: release/${{ matrix.target }}/Makefile-${{ matrix.target }}     
+       # - name: Upload artifacts
+       # uses: actions/upload-artifact@v4
+       # with:
+        #  name: Makefile-${{ matrix.target }}
+        #  path: release/${{ matrix.target }}/Makefile-${{ matrix.target }}     
           
 
 
@@ -491,6 +491,26 @@ jobs:
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}
+
+      - name: Upload ke Release
+        id: upload_release2
+        uses: softprops/action-gh-release@v1
+        with:
+          repository: Dirgha80/OpenClash
+          tag_name: v${{ needs.check-version.outputs.latest_ver }}
+          name: "v${{ needs.check-version.outputs.latest_ver }}"
+          body: |
+            ## OpenClash v${{ needs.check-version.outputs.latest_ver }}
+            **Changelog:**
+            - Update versi terbaru dari vernesong/dev
+            - **Full Changelog**: https://github.com/vernesong/OpenClash/commits/dev/
+            - Commit terakhir: ${{ needs.check-version.outputs.commit_msg }}
+            - Build IPK & APK
+          files: 
+            release/*
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.TARGET_REPO_DIRGHA80 }}     
 
         
       - name: Notif Telegram Build Selesai
