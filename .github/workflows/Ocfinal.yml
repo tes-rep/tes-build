@@ -403,7 +403,7 @@ jobs:
           mkdir -p "$RELEASE_DIR"
 
           cp "$FOUND" "$RELEASE_DIR/$OUT_NAME"
-          cp "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash/Makefile" "$RELEASE_DIR/Makefile-${{ matrix.target }}"
+          # cp "$TARGET_DIR/package/luci-app-openclash/luci-app-openclash/Makefile" "$RELEASE_DIR/Makefile-${{ matrix.target }}"
 
     
 
