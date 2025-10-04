@@ -252,13 +252,6 @@ jobs:
           mv /tmp/OpenWrt-SDK-* "$TARGET_DIR"
           fi
 
-      - name: Setup feeds
-        if: matrix.target == 'apk'
-        run: |
-          cd "$TARGET_DIR"
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
-
       
       - name: Clone luci-app-openclash
         run: |
