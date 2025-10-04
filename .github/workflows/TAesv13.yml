@@ -1,0 +1,207 @@
+name: TEST v13 - Full or Partial Sync + Subfolder Mode
+
+on:
+  workflow_dispatch:
+    inputs:
+      rootfs_url:
+        description: 'URL file arsip driver (tar.gz, zip, zst, dll) atau kosong jika pakai repo'
+        required: false
+        default: ''
+        type: string
+      type_file:
+        description: 'Ekstensi file (misal: zip, tar.gz, img)'
+        required: false
+        default: ''
+        type: string
+      repo_clone_url:
+        description: 'Repo GitHub sumber (contoh: https://github.com/unifreq/linux-5.15.y.git)'
+        required: false
+        default: 'https://github.com/unifreq/linux-5.15.y.git'
+        type: string
+      driver_type:
+        description: 'Path sumber, pisahkan dengan koma jika banyak (contoh: drivers/net/wireless,fs/ntfs3)'
+        required: false
+        default: ''
+        type: string
+      target_path:
+        description: 'Path tujuan, pisahkan dengan koma sesuai urutan driver_type (contoh: package/kernel/wifi,package/kernel/ntfs3)'
+        required: false
+        default: ''
+        type: string
+      target_repo:
+        description: 'Target repo GitHub (contoh: houjie/linux-openwrt)'
+        required: true
+        type: string
+      target_branch:
+        description: 'Target branch di repo tujuan'
+        required: false
+        default: coba
+        type: string
+      subfolder_name:
+        description: 'Nama folder di repo tujuan untuk menaruh hasil clone penuh (kosong = root)'
+        required: false
+        default: ''
+        type: string
+      token_option:
+        description: 'Pilih token GitHub (PAT)'
+        required: true
+        default: tes-rep
+        type: choice
+        options:
+          - tes-rep
+          - DIRGHA80
+          - HOUJIE80
+
+jobs:
+  sync_driver:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Set Token from Input
+        id: choose_token
+        run: |
+          case "${{ github.event.inputs.token_option }}" in
+            tes-rep)
+              echo "PAT=${{ secrets.TARGET_REPO_INI }}" >> $GITHUB_ENV ;;
+            DIRGHA80)
+              echo "PAT=${{ secrets.TARGET_REPO_DIRGHA80 }}" >> $GITHUB_ENV ;;
+            HOUJIE80)
+              echo "PAT=${{ secrets.TARGET_REPO_HOUJIE80 }}" >> $GITHUB_ENV ;;
+            *) echo "::error ::Pilihan token tidak valid!"; exit 1 ;;
+          esac
+
+      - name: Normalize Target Repo
+        id: fixrepo
+        run: |
+          repo="${{ github.event.inputs.target_repo }}"
+          if [[ "$repo" == https://github.com/* ]]; then
+            repo="${repo#https://github.com/}"
+            repo="${repo%/}"
+          fi
+          echo "normalized_repo=$repo" >> $GITHUB_OUTPUT
+
+      - name: Validate Inputs
+        if: ${{ github.event.inputs.driver_type != '' && github.event.inputs.target_path == '' }}
+        run: |
+          echo "::error ::'target_path' wajib diisi jika 'driver_type' ditentukan."
+          exit 1
+
+      - name: Install Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y aria2 unzip zstd wget npm jq
+          sudo pip3 install gdown
+          sudo pip3 install git+https://github.com/Juvenal-Yescas/mediafire-dl
+          wget https://mega.nz/linux/repo/xUbuntu_24.04/amd64/megacmd-xUbuntu_24.04_amd64.deb && sudo apt install "$PWD/megacmd-xUbuntu_24.04_amd64.deb"
+
+      - name: Download file ${{ github.event.inputs.type_file }}
+        if: ${{ github.event.inputs.rootfs_url != '' }}
+        run: |
+          mkdir -p build
+          echo "[🔍] Mendeteksi sumber dari: ${{ github.event.inputs.rootfs_url }}"
+          if echo "${{ github.event.inputs.rootfs_url }}" | grep -q "drive."; then
+            id=$(echo "${{ github.event.inputs.rootfs_url }}" | grep -o '[-_A-Za-z0-9]\{25,\}')
+            echo "[⬇️] Unduh dari Google Drive (ID: $id)"
+            sudo gdown "$id" -O build/file.${{ github.event.inputs.type_file }}
+          elif echo "${{ github.event.inputs.rootfs_url }}" | grep -q "mediafire.com"; then
+            sudo mediafire-dl "${{ github.event.inputs.rootfs_url }}" -o build/file.${{ github.event.inputs.type_file }}
+          elif echo "${{ github.event.inputs.rootfs_url }}" | grep -q "mega.nz"; then
+            sudo mega-get "${{ github.event.inputs.rootfs_url }}" build/file.${{ github.event.inputs.type_file }}
+          else
+            sudo wget --no-check-certificate "${{ github.event.inputs.rootfs_url }}" -O build/file.${{ github.event.inputs.type_file }}
+          fi
+
+      - name: Extract Archive
+        if: ${{ github.event.inputs.rootfs_url != '' && github.event.inputs.type_file != '' }}
+        run: |
+          mkdir -p extracted
+          file_type=$(file build/file.${{ github.event.inputs.type_file }})
+          case "$file_type" in
+            *"gzip compressed"*) tar -xzf build/file.${{ github.event.inputs.type_file }} -C extracted ;;
+            *"Zip archive data"*) unzip -o build/file.${{ github.event.inputs.type_file }} -d extracted ;;
+            *"Zstandard compressed"*) tar --use-compress-program=unzstd -xf build/file.${{ github.event.inputs.type_file }} -C extracted ;;
+            *"XZ compressed data"*) tar -xJf build/file.${{ github.event.inputs.type_file }} -C extracted ;;
+            *"POSIX tar archive"*) tar -xf build/file.${{ github.event.inputs.type_file }} -C extracted ;;
+            *) echo "Unsupported archive type, skip." ;;
+          esac
+
+      - name: Clone Driver Repo
+        if: ${{ github.event.inputs.rootfs_url == '' }}
+        run: |
+          git clone --depth=1 "${{ github.event.inputs.repo_clone_url }}" driver-clone
+
+      - name: Clone Target Repo
+        run: |
+          git clone https://x-access-token:${{ env.PAT }}@github.com/${{ steps.fixrepo.outputs.normalized_repo }}.git target-repo
+          cd target-repo
+          git checkout ${{ github.event.inputs.target_branch }} || git checkout -b ${{ github.event.inputs.target_branch }}
+
+      # 🔹 FITUR BARU: Copy seluruh repo ke subfolder tertentu
+      - name: Copy Full Repo to Subfolder
+        if: ${{ github.event.inputs.rootfs_url == '' && github.event.inputs.driver_type == '' && github.event.inputs.subfolder_name != '' }}
+        run: |
+          folder="${{ github.event.inputs.subfolder_name }}"
+          mkdir -p "target-repo/${folder}"
+          rsync -a --exclude='.git' driver-clone/ "target-repo/${folder}/"
+          echo "✅ Semua isi repo sumber disalin ke folder target: ${folder}"
+
+      - name: Copy All (Repo mode)
+        if: ${{ github.event.inputs.rootfs_url == '' && github.event.inputs.driver_type == '' && github.event.inputs.subfolder_name == '' }}
+        run: |
+          rsync -a --exclude='.git' driver-clone/ target-repo/
+
+      - name: Copy All (Archive mode)
+        if: ${{ github.event.inputs.rootfs_url != '' && github.event.inputs.driver_type == '' }}
+        run: |
+          cd extracted
+          dir=$(find . -mindepth 1 -maxdepth 1 -type d | head -n1)
+          [ -n "$dir" ] && cd "$dir"
+          rsync -a --exclude='.git' ./ ../../target-repo/
+          cd ../..
+
+      - name: Copy Multi Patch (Repo mode)
+        if: ${{ github.event.inputs.rootfs_url == '' && github.event.inputs.driver_type != '' }}
+        run: |
+          IFS=',' read -ra srcs <<< "${{ github.event.inputs.driver_type }}"
+          IFS=',' read -ra dsts <<< "${{ github.event.inputs.target_path }}"
+          [ ${#srcs[@]} -ne ${#dsts[@]} ] && echo "::error ::Jumlah driver_type dan target_path tidak sama!" && exit 1
+          for i in "${!srcs[@]}"; do
+            src="driver-clone/${srcs[$i]}"
+            dst="target-repo/${dsts[$i]}"
+            [ -d "$src" ] && rsync -a --exclude='.git' "$src/" "$dst/" || ([ -f "$src" ] && cp "$src" "$dst") || echo "::warning ::$src tidak ditemukan!"
+          done
+
+      - name: Copy Multi Patch (Archive mode)
+        if: ${{ github.event.inputs.rootfs_url != '' && github.event.inputs.driver_type != '' }}
+        run: |
+          cd extracted
+          dir=$(find . -mindepth 1 -maxdepth 1 -type d | head -n1)
+          [ -n "$dir" ] && cd "$dir"
+          IFS=',' read -ra srcs <<< "${{ github.event.inputs.driver_type }}"
+          IFS=',' read -ra dsts <<< "${{ github.event.inputs.target_path }}"
+          [ ${#srcs[@]} -ne ${#dsts[@]} ] && echo "::error ::Jumlah driver_type dan target_path tidak sama!" && exit 1
+          for i in "${!srcs[@]}"; do
+            src="${srcs[$i]}"
+            dst="../../target-repo/${dsts[$i]}"
+            [ -d "$src" ] && rsync -a --exclude='.git' "$src/" "$dst/" || ([ -f "$src" ] && cp "$src" "$dst") || echo "::warning ::$src tidak ditemukan!"
+          done
+          cd ../..
+
+      - name: Commit and Push
+        run: |
+          cd target-repo
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          if git diff --cached --quiet; then
+            echo "✅ Tidak ada perubahan yang perlu dikomit."
+          else
+            git commit -m "Sync repo or driver(s) from upstream"
+            git push -u origin ${{ github.event.inputs.target_branch }}
+          fi
+
+      - name: List Synced Files
+        run: |
+          echo "📦 Daftar file di target-repo:"
+          cd target-repo
+          find . -type f | sort
