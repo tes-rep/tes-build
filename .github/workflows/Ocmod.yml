@@ -252,20 +252,19 @@ jobs:
           mv /tmp/OpenWrt-SDK-* "$TARGET_DIR"
           fi
 
-
+      
       
       - name: Clone luci-app-openclash
         run: |
           set -e
           
           cd "$TARGET_DIR/package"
-          rm -rf luci-app-openclash
-          git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash temp
-          cd temp && git sparse-checkout set luci-app-openclash
-          mv luci-app-openclash ../luci-app-openclash
-          cd .. && rm -rf temp
+           rm -rf luci-app-openclash
+           git clone --depth 1 --branch dev --filter=blob:none --sparse https://github.com/vernesong/OpenClash temp
+           cd temp && git sparse-checkout set luci-app-openclash
+           mv luci-app-openclash ../luci-app-openclash
+           cd .. && rm -rf temp
 
-          
   
           
       - name: Tambahkan file patch (MOD, CORE, APK)
@@ -319,3 +318,201 @@ jobs:
         run: |
           set -e
           FILE_SUFFIX=""
+          if [ "${{ matrix.target }}" == "ipk" ]; then
+            FILE_SUFFIX="_all.ipk"
+          elif [ "${{ matrix.target }}" == "mod" ]; then
+            FILE_SUFFIX="_all-mod.ipk"
+          elif [ "${{ matrix.target }}" == "core" ]; then
+            FILE_SUFFIX="_all-core.ipk"
+          elif [ "${{ matrix.target }}" == "apk" ]; then
+            FILE_SUFFIX=".apk"
+          fi
+          
+          cd "$TARGET_DIR"
+          if [ "${{ matrix.target }}" == "apk" ]; then
+          make defconfig
+          make package/luci-app-openclash/compile V=99
+          else
+          make package/luci-app-openclash/compile V=99
+          fi
+          
+          # Cari output file dengan pola lebih fleksibel
+          if [ "${{ matrix.target }}" = "apk" ]; then
+            FOUND=$(find bin/ -type f -name "*.apk" | head -n1 || true)
+            OUT_NAME="luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk"
+          else
+            FOUND=$(find bin/ -type f -name "luci-app-openclash*.ipk" | head -n1 || true)
+            OUT_NAME="luci-app-openclash_${{ needs.check-version.outputs.latest_ver }}${FILE_SUFFIX}"
+          fi
+
+          if [ -z "$FOUND" ]; then
+            echo "❌ Output tidak ditemukan di folder bin/"
+            ls -R bin/ || true
+            exit 1
+          fi
+
+          # pastikan folder release ada
+          RELEASE_DIR="$GITHUB_WORKSPACE/release/${{ matrix.target }}"
+          mkdir -p "$RELEASE_DIR"
+
+          cp "$FOUND" "$RELEASE_DIR/$OUT_NAME"
+
+    
+
+      - name: Hitung durasi per target
+        id: duration
+        run: |
+          END=$(date +%s)
+          BUILD_START=${{ steps.start.outputs.build_start }}
+          DURASI=$((END - BUILD_START))
+          MIN=$((DURASI / 60))
+          SEC=$((DURASI % 60))
+          echo "⏱ Durasi build ${{ matrix.target }}: ${MIN}m ${SEC}s" > durasi_${{ matrix.target }}.txt
+
+      - name: Upload durasi artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: durasi-${{ matrix.target }}
+          path: durasi_${{ matrix.target }}.txt
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openclash-${{ matrix.target }}
+          path: release/${{ matrix.target }}/*   
+          
+
+
+  release:
+    needs: [build, check-version]
+    if: success() && (needs.check-version.outputs.skip_build == 'false' || needs.check-version.outputs.skip_release == 'false')
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download durasi artifact
+        uses: actions/download-artifact@v5
+        with:
+          pattern: durasi-*
+          path: durasi
+        
+
+      - name: Gabungkan durasi build
+        run: |
+          DURATION_TEXT=""
+          for f in durasi/*/durasi_*.txt; do
+            DURATION_TEXT="$DURATION_TEXT$(cat $f)\n"
+          done
+          echo "DURATION_TEXT<<EOF" >> $GITHUB_ENV
+          echo -e "$DURATION_TEXT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+     
+      - name: Download IPK artifact
+        uses: actions/download-artifact@v5
+        with:
+          pattern: openclash-*
+          path: release
+          merge-multiple: true
+
+      - name: Upload ke Release
+        id: upload_release2
+        uses: softprops/action-gh-release@v1
+        with:
+          repository: tes-rep/OpenClash
+          tag_name: v${{ needs.check-version.outputs.latest_ver }}
+          name: "v${{ needs.check-version.outputs.latest_ver }}"
+          body: |
+            ## OpenClash v${{ needs.check-version.outputs.latest_ver }}
+            **Changelog:**
+            - Update versi terbaru dari vernesong/dev
+            - **Full Changelog**: https://github.com/vernesong/OpenClash/commits/dev/
+            - Commit terakhir: ${{ needs.check-version.outputs.commit_msg }}
+            - Build IPK & APK
+          files: 
+            release/*
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}     
+
+
+      - name: Upload ke Release
+        id: upload_release
+        uses: softprops/action-gh-release@v1
+        with:
+          repository: Dirgha80/OpenClash
+          tag_name: v${{ needs.check-version.outputs.latest_ver }}
+          name: "v${{ needs.check-version.outputs.latest_ver }}"
+          body: |
+            ## OpenClash v${{ needs.check-version.outputs.latest_ver }}
+            **Changelog:**
+            - Update versi terbaru dari vernesong/dev
+            - **Full Changelog**: https://github.com/vernesong/OpenClash/commits/dev/
+            - Commit terakhir: ${{ needs.check-version.outputs.commit_msg }}
+            - Build IPK & APK
+          files: 
+            release/*
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.TARGET_REPO_DIRGHA80 }}
+
+        
+      - name: Notif Telegram Build Selesai
+        if: success()
+        run: |
+          BUILD_END=$(date +%s)
+          START=${{ needs.build.outputs.build_start }}
+          START_HUMAN="${{ needs.build.outputs.build_start_human }}"
+          DURATION=$((BUILD_END - START))
+          MIN=$((DURATION / 60))
+          SEC=$((DURATION % 60))
+          
+          VER="v${{ needs.check-version.outputs.latest_ver }}"
+          RELEASE_URL="https://github.com/Dirgha80/OpenClash/releases/tag/$VER"
+          BASE_URL="https://github.com/Dirgha80/OpenClash/releases/download/$VER"
+          OLD_VER="v${{ needs.check-version.outputs.last_ver }}"
+          
+          
+          MSG=$(printf "✅ Build OpenClash Selesai!\nक══════क⊹⊱✫⊰⊹क══════क\nVersi baru: %s\nVersi lama: %s\nक══════क⊹⊱✫⊰⊹क══════क\n🕒 Start: %s\n%s\nक══════क⊹⊱✫⊰⊹क══════क\n🔗 Release: <a href=\"%s\">Klik di sini</a>\n📦 IPK: <a href=\"%s/luci-app-openclash_%s_all.ipk\">Download</a>\n📱 APK: <a href=\"%s/luci-app-openclash-%s.apk\">Download</a>\n📦 MOD: <a href=\"%s/luci-app-openclash_%s_all-mod.ipk\">Download</a>\n📱 CORE: <a href=\"%s/luci-app-openclash_%s_all-core.ipk\">Download</a>" \
+            "$VER" \
+            "$OLD_VER" \
+            "$START_HUMAN" \
+            "${DURATION_TEXT}" \
+            "$RELEASE_URL" \
+            "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" \
+            "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" \
+            "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" \
+            "$BASE_URL" "${{ needs.check-version.outputs.latest_ver }}" )
+          
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="$MSG" \
+            -d parse_mode="HTML" \
+            -d disable_web_page_preview=true
+
+      - name: Kirim notif ke Telegram kalau gagal
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ❌ Build gagal di ${{ github.repository }}
+            Workflow: ${{ github.workflow }}
+            Branch/Tag: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            🔗 Log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+       # Hapus artifact setelah berhasil upload ke release
+      - name: Delete all artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+              durasi-*
+              openclash-*
+          failOnError: false
+          
+     
+   
