@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: '0 */6 * * *'
 
+permissions:
+   contents: write   
+
 jobs:
   check-version:
     runs-on: ubuntu-latest
@@ -337,7 +340,7 @@ jobs:
           
           # Cari output file dengan pola lebih fleksibel
           if [ "${{ matrix.target }}" = "apk" ]; then
-            FOUND=$(find bin/ -type f -name "*.apk" | head -n1 || true)
+            FOUND=$(find bin/ -type f -name "luci-app-openclash*.apk" | head -n1 || true)
             OUT_NAME="luci-app-openclash-${{ needs.check-version.outputs.latest_ver }}.apk"
           else
             FOUND=$(find bin/ -type f -name "luci-app-openclash*.ipk" | head -n1 || true)
