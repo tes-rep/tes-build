@@ -296,6 +296,17 @@ jobs:
           }' Makefile
           fi
 
+      - name: Ganti openclash_version.sh dengan versi custom
+        run: |
+          set -e
+          TARGET_PATH="$TARGET_DIR/package/luci-app-openclash/root/usr/share/openclash"
+          mkdir -p "$TARGET_PATH"
+          rm -f "$TARGET_PATH/openclash_version.sh"
+          cp "$GITHUB_WORKSPACE/data/openclash/openclash_version.sh" "$TARGET_PATH/openclash_version.sh"
+          chmod +x "$TARGET_PATH/openclash_version.sh"
+          echo "✅ openclash_version.sh diganti dengan versi custom"
+
+
       - name: Download mihomo core (CORE, APK)
         if: matrix.target == 'core' || matrix.target == 'apk'
         run: |
