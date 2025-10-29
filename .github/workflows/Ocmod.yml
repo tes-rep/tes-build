@@ -448,7 +448,7 @@ jobs:
             release/*
           prerelease: true
         env:
-          GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT3 }}     
+          GITHUB_TOKEN: ${{ secrets.TARGET_REPO_TES }}     
 
 
       - name: Upload ke Release

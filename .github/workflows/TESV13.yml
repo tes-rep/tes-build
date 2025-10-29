@@ -62,7 +62,7 @@ jobs:
         run: |
           case "${{ github.event.inputs.token_option }}" in
             tes-rep)
-              echo "PAT=${{ secrets.TARGET_REPO_INI }}" >> $GITHUB_ENV ;;
+              echo "PAT=${{ secrets.TARGET_REPO_TES }}" >> $GITHUB_ENV ;;
             DIRGHA80)
               echo "PAT=${{ secrets.TARGET_REPO_DIRGHA80 }}" >> $GITHUB_ENV ;;
             HOUJIE80)

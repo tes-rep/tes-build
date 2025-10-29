@@ -15,11 +15,11 @@ log_message() {
 }
 
 # Log Start
-log_message "Memulai patch OpenClash..."
+log_message "####Memulai patch OpenClash...###"
 
 # === PATCH settings.lua (hapus deskripsi panjang multi-baris) ===
 echo "[✔] Patch m.description di settings.lua"
-log_message "Memulai patch settings.lua"
+log_message "[✔] Memulai patch settings.lua"
 if grep -q '^m\.description *= ' "$FORM_SETTINGS_FILE"; then
   cp "$FORM_SETTINGS_FILE" "${FORM_SETTINGS_FILE}.bak"
   awk '
@@ -29,7 +29,7 @@ if grep -q '^m\.description *= ' "$FORM_SETTINGS_FILE"; then
   {skip=0; print}
   ' "${FORM_SETTINGS_FILE}.bak" > "$FORM_SETTINGS_FILE"
   echo "[✓] Berhasil mengganti m.description dengan satu baris kosong"
-  log_message "Patch settings.lua berhasil"
+  log_message "[✔] Patch settings.lua berhasil"
 else
   echo "[ℹ] Tidak ditemukan m.description di settings.lua"
   log_message "Tidak ditemukan m.description di settings.lua"
@@ -49,7 +49,7 @@ if [ -f "$CTRL_FILE" ]; then
     sed -i "/$(echo "$TARGET_LINE" | sed 's/[^^]/[&]/g; s/\^/\\^/g')/a\\
 $OCEDITOR_LINE" "$CTRL_FILE"
     echo "[✓] Entry oceditor berhasil disisipkan setelah entry config"
-    log_message "Entry oceditor berhasil disisipkan setelah config"
+    log_message "[✔] Entry oceditor berhasil disisipkan setelah config"
   else
     echo "[⚠️] Tidak ditemukan entry config utama, gagal menyisipkan oceditor"
     log_message "Tidak ditemukan entry config utama"
@@ -69,7 +69,7 @@ if [ -f "$FORM_CLIENT_FILE" ]; then
   sed -i 's/translate("A Clash Client For OpenWrt")/translate(" ")/' "$FORM_CLIENT_FILE"
   sed -i '/m:append(Template("openclash\/developer"))/d' "$FORM_CLIENT_FILE"
   echo "[✓] client.lua berhasil dipangkas"
-  log_message "client.lua berhasil dipangkas"
+  log_message "[✔] client.lua berhasil dipangkas"
 else
   echo "[⚠️] File $FORM_CLIENT_FILE tidak ditemukan"
   log_message "File $FORM_CLIENT_FILE tidak ditemukan"
@@ -78,6 +78,7 @@ fi
 # === BUAT VIEW ocEditor ===
 if [ ! -f "$VIEW_OCEDITOR" ]; then
   echo "[✔] Membuat view oceditor.htm"
+  log_message "[✔] Membuat view oceditor.htm"
   mkdir -p "$(dirname "$VIEW_OCEDITOR")"
   cat << 'EOF' > "$VIEW_OCEDITOR"
 <%+header%>
@@ -108,13 +109,14 @@ fi
 
 # === BUAT SYMLINK ===
 echo "[✔] Memastikan symlink openclash → /www/tinyfm/openclash"
+log_message "[✔] Memastikan symlink openclash → /www/tinyfm/openclash"
 create_safe_openclash_symlink() {
   local target="/etc/openclash"
   local link="/www/tinyfm/openclash"
   mkdir -p /www/tinyfm
   if [ -L "$link" ] && [ "$(readlink -f "$link")" = "$target" ]; then
     echo "[✓] Symlink sudah benar: $link → $target"
-    log_message "Symlink sudah benar: $link → $target"
+    log_message "[✔] Symlink sudah benar: $link → $target"
     return 0
   fi
   if [ -e "$link" ]; then
@@ -130,7 +132,7 @@ create_safe_openclash_symlink
 # === RESTART OPENCLASH ===
 echo "[✔] Restarting OpenClash..."
 log_message "Restarting OpenClash service"
-/etc/init.d/openclash restart && echo "[✓] OpenClash berhasil direstart" && log_message "OpenClash restart sukses" || { 
+/etc/init.d/openclash start && echo "[✓] OpenClash berhasil direstart" && log_message "OpenClash restart sukses" || { 
   echo "[✘] Gagal merestart OpenClash"; 
   log_message "Gagal merestart OpenClash"; 
 }
